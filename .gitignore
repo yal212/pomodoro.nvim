@@ -1,0 +1,6 @@
+*.log
+*.tmp
+.luarc.jsonc
+.DS_Store
+tests/.deps/
+tests/site/

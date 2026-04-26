@@ -1,0 +1,209 @@
+*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Apr 26
+
+==============================================================================
+CONTENTS                                                  *pomodoro-contents*
+
+  1. Introduction ................................. |pomodoro-introduction|
+  2. Setup ........................................ |pomodoro-setup|
+  3. Configuration ................................ |pomodoro-config|
+  4. Commands ..................................... |pomodoro-commands|
+  5. Statusline ................................... |pomodoro-statusline|
+  6. Hooks ........................................ |pomodoro-hooks|
+  7. Focus mode ................................... |pomodoro-focus|
+  8. Persistence .................................. |pomodoro-persistence|
+  9. Telescope .................................... |pomodoro-telescope|
+ 10. Health ....................................... |pomodoro-health|
+
+==============================================================================
+1. INTRODUCTION                                       *pomodoro-introduction*
+
+`pomodoro.nvim` is a Pomodoro timer for developers who live in Neovim. It runs
+work / short break / long break cycles, fires editor-native notifications,
+persists per-day stats to disk, and includes an optional focus mode that
+blocks chosen commands during work blocks.
+
+Requirements: Neovim 0.10+. No required runtime dependencies.
+
+==============================================================================
+2. SETUP                                                     *pomodoro-setup*
+
+Lazy.nvim:
+>lua
+  {
+    "yal212/pomodoro.nvim",
+    opts = {},
+    cmd = {
+      "PomodoroStart", "PomodoroPause", "PomodoroResume",
+      "PomodoroStop",  "PomodoroSkip",  "PomodoroStatus",
+      "PomodoroStats", "PomodoroReset",
+    },
+  }
+<
+Or manually:
+>lua
+  require("pomodoro").setup({})
+<
+
+==============================================================================
+3. CONFIGURATION                                            *pomodoro-config*
+
+Defaults: >lua
+  require("pomodoro").setup({
+    durations = { work = 25, short_break = 5, long_break = 15 }, -- minutes
+    cycles_per_long_break = 4,
+    auto_start_break = true,    -- break starts automatically after work
+    auto_start_work  = false,   -- next work block needs explicit confirm
+    notify_styles    = { "vim_notify", "float" },
+    notify           = { float_duration_ms = 4000, sound = false },
+    statusline       = { icon = "", show_when_idle = false, format = "%s %s" },
+    status_window    = {
+      border = "rounded", width = 30, height = 5,
+      anchor = "NE", row = 1, col_offset = 2, refresh_ms = 1000,
+    },
+    focus = {
+      enabled = false,
+      blocked_commands = {},     -- e.g. { "Lazy", "Mason", "Telescope" }
+      silent_diagnostics = false,
+    },
+    persistence = { enabled = true, path = nil }, -- nil → stdpath('data')
+    hooks = {
+      on_work_start = function(p) end,
+      on_work_end   = function(p) end,
+      on_break_start = function(p) end,
+      on_break_end   = function(p) end,
+      on_cycle_complete = function() end,
+    },
+  })
+<
+
+==============================================================================
+4. COMMANDS                                               *pomodoro-commands*
+
+                                                          *:PomodoroStart*
+:PomodoroStart [{phase}]
+    Start a phase. {phase} is one of `work`, `short`, `long`. If omitted,
+    starts the next phase in the cycle (or resumes if paused).
+
+:PomodoroPause                                            *:PomodoroPause*
+    Pause the active phase. Remaining time is preserved.
+
+:PomodoroResume                                           *:PomodoroResume*
+    Resume from a pause.
+
+:PomodoroStop                                             *:PomodoroStop*
+    Stop the active pomodoro and reset to idle.
+
+:PomodoroSkip                                             *:PomodoroSkip*
+    End the current phase immediately and advance to the next.
+
+:PomodoroStatus                                           *:PomodoroStatus*
+    Toggle the floating status window.
+
+:PomodoroStats                                            *:PomodoroStats*
+    Print today + last 7 days summary via |vim.notify|.
+
+:PomodoroReset                                            *:PomodoroReset*
+    Wipe persisted stats (with confirm).
+
+==============================================================================
+5. STATUSLINE                                           *pomodoro-statusline*
+
+Renderer-agnostic component:
+>lua
+  require("pomodoro.statusline").component()  -- returns string
+<
+Lualine recipe:
+>lua
+  {
+    "nvim-lualine/lualine.nvim",
+    opts = function(_, opts)
+      local pomo = function()
+        local s = require("pomodoro.statusline").component_lualine()
+        return s.text
+      end
+      table.insert(opts.sections.lualine_x, 1, pomo)
+      return opts
+    end,
+  }
+<
+
+==============================================================================
+6. HOOKS                                                     *pomodoro-hooks*
+
+All hooks receive a small payload table:
+
+  on_work_start      { duration_min }
+  on_work_end        { cycle_index }
+  on_break_start     { kind = "short" | "long", duration_min }
+  on_break_end       { kind = "short" | "long" }
+  on_cycle_complete  {}                       (after Nth long break)
+
+Use them to ring a system bell, send a desktop notification, etc:
+>lua
+  require("pomodoro").setup({
+    hooks = {
+      on_break_start = function()
+        vim.fn.jobstart({ "terminal-notifier", "-message", "Break time" })
+      end,
+    },
+  })
+<
+
+==============================================================================
+7. FOCUS MODE                                                *pomodoro-focus*
+
+Opt-in. When enabled and a work block is active, commands listed in
+`focus.blocked_commands` are intercepted and replaced with a warning notify.
+Useful for keeping yourself out of plugin managers and pickers during deep
+work.
+
+  focus = {
+    enabled = true,
+    blocked_commands = { "Lazy", "Mason", "Telescope" },
+    silent_diagnostics = true,
+  }
+
+`silent_diagnostics = true` hides `vim.diagnostic` virtual_text during work
+and restores it on break.
+
+==============================================================================
+8. PERSISTENCE                                         *pomodoro-persistence*
+
+Stats are stored at `vim.fn.stdpath('data') .. '/pomodoro/stats.json'`. The
+file is rewritten atomically (temp file + rename) on every completed work
+phase and on |VimLeavePre|. A corrupt file is moved aside as `stats.json.bak`
+and a fresh empty database is started — the plugin never crashes on bad data.
+
+Schema:
+>json
+  {
+    "version": 1,
+    "days": {
+      "YYYY-MM-DD": {
+        "completed_work": 6,
+        "completed_long_breaks": 1,
+        "minutes_focused": 150
+      }
+    }
+  }
+<
+
+==============================================================================
+9. TELESCOPE                                             *pomodoro-telescope*
+
+If `nvim-telescope/telescope.nvim` is installed, an extension is registered
+automatically:
+>vim
+  :Telescope pomodoro stats
+<
+
+==============================================================================
+10. HEALTH                                                  *pomodoro-health*
+
+>vim
+  :checkhealth pomodoro
+<
+Reports Neovim version, data dir writability, and optional integrations
+(telescope, nvim-notify).
+
+vim:tw=78:ts=8:noet:ft=help:norl:
