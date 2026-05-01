@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍅 pomodoro.nvim
+# pomodoro.nvim
 
 **A focus-first Pomodoro timer for developers who live in Neovim.**
 
