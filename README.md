@@ -34,7 +34,8 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 - 🍅 **Classic Pomodoro cycles** — 25 / 5 / 15 minute defaults, long break every 4th work block, all configurable
 - 🔔 **Editor-native notifications** — `vim.notify` (lights up [`nvim-notify`](https://github.com/rcarriga/nvim-notify) / [`noice`](https://github.com/folke/noice.nvim) automatically) and/or a transient floating window
 - 📊 **Per-day stats** — completed work blocks, focused minutes, long-break count, persisted atomically as JSON
-- 🪟 **Toggleable status window** — pinned floating window with live countdown
+- 🪟 **Toggleable status window** — pinned, borderless card with phase-colored header, live progress bar, and today counter
+- 🛎️ **Continue / stop prompt** — when auto-start is off, each phase ends with a `vim.ui.select` asking whether to begin the next phase or stop
 - 🎯 **Focus mode (opt-in)** — block configured `:` commands during work; optionally mute diagnostics
 - 🧩 **Renderer-agnostic statusline** — drop-in component for `lualine`, `heirline`, or your own `statusline`
 - 🔭 **Optional Telescope picker** — last 30 days at a glance, only loaded if Telescope is present
@@ -139,8 +140,8 @@ require("pomodoro").setup({
   cycles_per_long_break = 4,
 
   -- Phase transition behavior
-  auto_start_break = true,   -- break begins immediately after work
-  auto_start_work  = false,  -- next work block requires :PomodoroStart
+  auto_start_break = true,   -- break begins immediately; if false a Continue/Stop prompt appears
+  auto_start_work  = false,  -- next work block requires :PomodoroStart (or Continue from prompt)
 
   -- Notification channels (any subset, in display order)
   notify_styles = { "vim_notify", "float" },
@@ -154,17 +155,27 @@ require("pomodoro").setup({
     icon            = "",
     show_when_idle  = false,
     format          = "%s %s",     -- icon, body
+    refresh_ms      = 250,         -- live tick while a phase is running
   },
 
-  -- Toggleable pinned status window
+  -- Toggleable pinned status window (borderless card)
   status_window = {
-    border     = "rounded",
-    width      = 30,
-    height     = 5,
-    anchor     = "NE",
-    row        = 1,
-    col_offset = 2,
-    refresh_ms = 1000,
+    border             = "none",
+    width              = 36,
+    height             = 5,
+    anchor             = "NE",
+    row                = 1,
+    col_offset         = 2,
+    refresh_ms         = 250,
+    show_progress_bar  = true,
+    show_today         = true,
+    icons = {
+      work        = "▶",
+      short_break = "•",
+      long_break  = "★",
+      paused      = "❚❚",
+      idle        = "○",
+    },
   },
 
   -- Opt-in focus enforcement
@@ -347,7 +358,7 @@ Reports Neovim version, data-dir writability, and which optional integrations ar
 <details>
 <summary><b>Why is the status window not updating?</b></summary>
 
-The status window has its own 1 s refresh timer that runs only while the window is open. The statusline component reads remaining time on demand and refreshes whenever your statusline does — if you use lualine in `lazy` mode, lower its `refresh.statusline` interval.
+The status window refreshes every 250 ms while it's open. A separate uv timer runs `:redrawstatus` at the same cadence whenever a phase is active, so any statusline component (lualine, heirline, native) ticks too. Both intervals are configurable via `status_window.refresh_ms` and `statusline.refresh_ms`. If you use lualine in `lazy` mode and want even smoother ticks, lower its `refresh.statusline` interval as well.
 
 </details>
 

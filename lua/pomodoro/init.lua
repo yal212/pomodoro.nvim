@@ -5,6 +5,7 @@ local Cycle = require("pomodoro.cycle")
 local Notify = require("pomodoro.notify")
 local Stats = require("pomodoro.stats")
 local Focus = require("pomodoro.focus")
+local Statusline = require("pomodoro.statusline")
 
 local M = {}
 
@@ -14,6 +15,22 @@ local function call_hook(name, payload)
   if type(fn) == "function" then
     pcall(fn, payload or {})
   end
+end
+
+local function prompt_continue(next_phase, on_continue)
+  local label = Cycle.label(next_phase)
+  vim.ui.select({ "Continue → " .. label, "Stop" }, {
+    prompt = "Pomodoro: phase complete",
+    format_item = function(item)
+      return item
+    end,
+  }, function(choice)
+    if choice and choice ~= "Stop" then
+      on_continue()
+    else
+      Notify.send("Stopped")
+    end
+  end)
 end
 
 local function start_phase(phase)
@@ -60,7 +77,10 @@ function M._on_phase_end(phase)
       start_phase(next_phase)
     else
       State.set_phase(State.PHASE.IDLE, 0)
-      Notify.send("Work complete. Run :PomodoroStart to begin break.")
+      Notify.send("Work complete")
+      prompt_continue(next_phase, function()
+        start_phase(next_phase)
+      end)
     end
   elseif phase == State.PHASE.SHORT_BREAK or phase == State.PHASE.LONG_BREAK then
     if phase == State.PHASE.LONG_BREAK then
@@ -72,7 +92,10 @@ function M._on_phase_end(phase)
       start_phase(State.PHASE.WORK)
     else
       State.set_phase(State.PHASE.IDLE, 0)
-      Notify.send("Break over. Run :PomodoroStart to resume work.")
+      Notify.send("Break over")
+      prompt_continue(State.PHASE.WORK, function()
+        start_phase(State.PHASE.WORK)
+      end)
     end
   end
 end
@@ -195,6 +218,7 @@ function M.setup(user_opts)
   Focus.setup()
   require("pomodoro.commands").register()
   register_persist_autocmd()
+  Statusline.start_redraw_loop(Config.get().statusline.refresh_ms)
   did_setup = true
 end
 

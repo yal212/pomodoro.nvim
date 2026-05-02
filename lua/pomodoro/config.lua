@@ -18,6 +18,7 @@ M.defaults = {
     icon = "",
     show_when_idle = false,
     format = "%s %s",
+    refresh_ms = 250,
   },
   status_window = {
     border = "none",
@@ -26,7 +27,7 @@ M.defaults = {
     anchor = "NE",
     row = 1,
     col_offset = 2,
-    refresh_ms = 1000,
+    refresh_ms = 250,
     show_progress_bar = true,
     show_today = true,
     icons = {

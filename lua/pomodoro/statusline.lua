@@ -52,4 +52,34 @@ end
 
 M.format_remaining = format_remaining
 
+local redraw_handle
+
+function M.start_redraw_loop(interval_ms)
+  M.stop_redraw_loop()
+  if not interval_ms or interval_ms <= 0 then
+    return
+  end
+  redraw_handle = vim.uv.new_timer()
+  if not redraw_handle then
+    return
+  end
+  redraw_handle:start(
+    interval_ms,
+    interval_ms,
+    vim.schedule_wrap(function()
+      if State.is_running() then
+        vim.cmd("redrawstatus")
+      end
+    end)
+  )
+end
+
+function M.stop_redraw_loop()
+  if redraw_handle and not redraw_handle:is_closing() then
+    redraw_handle:stop()
+    redraw_handle:close()
+  end
+  redraw_handle = nil
+end
+
 return M
