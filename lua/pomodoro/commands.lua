@@ -4,61 +4,109 @@ local function pomodoro()
   return require("pomodoro")
 end
 
-function M.register()
-  local user_cmd = vim.api.nvim_create_user_command
-
-  user_cmd("PomodoroStart", function(opts)
-    pomodoro().start(opts.args ~= "" and opts.args or nil)
-  end, {
-    nargs = "?",
-    complete = function()
-      return { "work", "short", "long" }
+-- Subcommand names are matched case-insensitively (:Pomodoro Start == :Pomodoro start).
+local subcommands = {
+  start = {
+    run = function(args)
+      pomodoro().start(args[1])
     end,
-    desc = "Start a pomodoro phase",
+    complete = { "work", "short", "long" },
+  },
+  pause = {
+    run = function()
+      pomodoro().pause()
+    end,
+  },
+  resume = {
+    run = function()
+      pomodoro().resume()
+    end,
+  },
+  stop = {
+    run = function()
+      pomodoro().stop()
+    end,
+  },
+  skip = {
+    run = function()
+      pomodoro().skip()
+    end,
+  },
+  restart = {
+    run = function()
+      pomodoro().restart()
+    end,
+  },
+  status = {
+    run = function()
+      pomodoro().status()
+    end,
+  },
+  stats = {
+    run = function()
+      pomodoro().stats_summary()
+    end,
+  },
+  history = {
+    run = function(args)
+      pomodoro().history(args[1])
+    end,
+  },
+  reset = {
+    run = function()
+      vim.ui.select({ "yes", "no" }, { prompt = "Wipe all pomodoro stats?" }, function(choice)
+        if choice == "yes" then
+          pomodoro().reset_stats()
+        end
+      end)
+    end,
+  },
+}
+
+local subcommand_names = vim.tbl_keys(subcommands)
+table.sort(subcommand_names)
+
+local function usage()
+  return "Usage: :Pomodoro {" .. table.concat(subcommand_names, "|") .. "}"
+end
+
+local function dispatch(opts)
+  local name = (opts.fargs[1] or ""):lower()
+  local sub = subcommands[name]
+  if not sub then
+    require("pomodoro.notify").send(usage(), "error")
+    return
+  end
+  local args = {}
+  for i = 2, #opts.fargs do
+    args[#args + 1] = opts.fargs[i]
+  end
+  sub.run(args)
+end
+
+local function prefix_filter(candidates, arglead)
+  local lead = arglead:lower()
+  return vim.tbl_filter(function(c)
+    return vim.startswith(c, lead)
+  end, candidates)
+end
+
+local function complete(arglead, cmdline)
+  -- A completed first argument means we're on a subcommand's own arguments.
+  local name = cmdline:match("^%s*['<,>%d]*%s*Pomodoro!?%s+(%S+)%s")
+  if name then
+    local sub = subcommands[name:lower()]
+    return sub and sub.complete and prefix_filter(sub.complete, arglead) or {}
+  end
+  return prefix_filter(subcommand_names, arglead)
+end
+
+function M.register()
+  vim.api.nvim_create_user_command("Pomodoro", dispatch, {
+    nargs = "*",
+    complete = complete,
+    desc = "Pomodoro timer commands",
   })
-
-  user_cmd("PomodoroPause", function()
-    pomodoro().pause()
-  end, { desc = "Pause the active pomodoro" })
-
-  user_cmd("PomodoroResume", function()
-    pomodoro().resume()
-  end, { desc = "Resume a paused pomodoro" })
-
-  user_cmd("PomodoroStop", function()
-    pomodoro().stop()
-  end, { desc = "Stop the active pomodoro" })
-
-  user_cmd("PomodoroSkip", function()
-    pomodoro().skip()
-  end, { desc = "Skip the current phase" })
-
-  user_cmd("PomodoroRestart", function()
-    pomodoro().restart()
-  end, { desc = "Restart the current phase from the beginning" })
-
-  user_cmd("PomodoroStatus", function()
-    pomodoro().status()
-  end, { desc = "Toggle the pomodoro status window" })
-
-  user_cmd("PomodoroHistory", function(opts)
-    pomodoro().history(opts.args ~= "" and opts.args or nil)
-  end, {
-    nargs = "?",
-    desc = "Show past days' stats in a floating window",
-  })
-
-  user_cmd("PomodoroStats", function()
-    pomodoro().stats_summary()
-  end, { desc = "Print today + last 7 days summary" })
-
-  user_cmd("PomodoroReset", function()
-    vim.ui.select({ "yes", "no" }, { prompt = "Wipe all pomodoro stats?" }, function(choice)
-      if choice == "yes" then
-        pomodoro().reset_stats()
-      end
-    end)
-  end, { desc = "Wipe persisted pomodoro stats" })
 
   pcall(function()
     require("pomodoro.telescope").register()

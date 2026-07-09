@@ -6,4 +6,4 @@ require("pomodoro").setup({
   durations = { work = 1, short_break = 1, long_break = 1 },
   cycles_per_long_break = 2,
 })
-print("pomodoro.nvim dev init loaded — try :PomodoroStart")
+print("pomodoro.nvim dev init loaded — try :Pomodoro start")

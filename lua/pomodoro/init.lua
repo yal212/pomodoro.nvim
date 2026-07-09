@@ -33,7 +33,7 @@ local function prompt_continue(next_phase, on_continue)
   end)
 end
 
--- override_min: one-off phase length in minutes (:PomodoroStart 45); the
+-- override_min: one-off phase length in minutes (:Pomodoro start 45); the
 -- configured durations are untouched.
 local function start_phase(phase, override_min)
   local opts = Config.get()
@@ -65,7 +65,7 @@ local function start_phase(phase, override_min)
   end
 end
 
--- ctx.skipped: the phase was cut short via :PomodoroSkip — advance to the
+-- ctx.skipped: the phase was cut short via :Pomodoro skip — advance to the
 -- next phase but record no stats and fire no completion hooks.
 function M._on_phase_end(phase, ctx)
   ctx = ctx or {}
@@ -156,7 +156,7 @@ function M.start(arg)
   elseif State.current.phase == State.PHASE.PAUSED then
     return M.resume()
   elseif State.is_running() then
-    Notify.send("Already running. :PomodoroStop first.", "warn")
+    Notify.send("Already running. :Pomodoro stop first.", "warn")
     return
   else
     target = next_phase_from_idle()

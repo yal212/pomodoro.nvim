@@ -61,7 +61,7 @@ local function build()
     local header = icon ~= "" and (icon .. "  Idle") or "Idle"
     push(center(header, inner), "PomodoroIdle")
     push("")
-    push(center(":PomodoroStart", inner), "PomodoroDim")
+    push(center(":Pomodoro start", inner), "PomodoroDim")
     while #lines < sw.height do
       push("")
     end

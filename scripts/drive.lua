@@ -1,5 +1,5 @@
--- End-to-end drive of pomodoro.nvim through its user commands: real timers
--- (3-second phases), real :Pomodoro* commands, assertions on observable
+-- End-to-end drive of pomodoro.nvim through its user command: real timers
+-- (3-second phases), real :Pomodoro subcommands, assertions on observable
 -- state. Complements the unit suite by exercising the seams the specs mock.
 -- Run from the repo root:
 --   nvim --headless --clean -u NONE -l scripts/drive.lua
@@ -56,8 +56,12 @@ require("pomodoro").setup({
 local State = require("pomodoro.state")
 local Stats = require("pomodoro.stats")
 
-step("start work via :PomodoroStart", function()
-  vim.cmd("PomodoroStart")
+step("old :PomodoroStart command is gone", function()
+  eq(vim.fn.exists(":PomodoroStart"), 0, "old command still defined")
+end)
+
+step("start work via :Pomodoro Start (case-insensitive)", function()
+  vim.cmd("Pomodoro Start")
   eq(State.current.phase, State.PHASE.WORK, "phase")
   eq(State.current.duration_ms, 3000, "duration_ms")
 end)
@@ -81,50 +85,50 @@ end)
 
 step("skip during break -> no break_end hook", function()
   local hooks_before = #hook_log
-  vim.cmd("PomodoroSkip")
+  vim.cmd("Pomodoro skip")
   eq(#hook_log, hooks_before, "hook count unchanged")
   -- auto_start_work=false -> idle + prompt suppressed headless (vim.ui.select)
 end)
 
-step("custom duration :PomodoroStart 0.1 (6s) doesn't touch config", function()
-  vim.cmd("PomodoroStop")
-  vim.cmd("PomodoroStart 0.1")
+step("custom duration :Pomodoro start 0.1 (6s) doesn't touch config", function()
+  vim.cmd("Pomodoro stop")
+  vim.cmd("Pomodoro start 0.1")
   eq(State.current.phase, State.PHASE.WORK, "phase")
   eq(State.current.duration_ms, 6000, "override duration")
   eq(require("pomodoro.config").get().durations.work, 0.05, "config untouched")
 end)
 
 step("restart keeps the override", function()
-  vim.cmd("PomodoroRestart")
+  vim.cmd("Pomodoro restart")
   eq(State.current.duration_ms, 6000, "restarted duration")
 end)
 
 step("skip during work -> nothing recorded", function()
   local before = Stats.today().completed_work
-  vim.cmd("PomodoroSkip")
+  vim.cmd("Pomodoro skip")
   eq(Stats.today().completed_work, before, "completed_work unchanged by skip")
 end)
 
 step("pause/resume via commands", function()
-  vim.cmd("PomodoroStop")
-  vim.cmd("PomodoroStart")
-  vim.cmd("PomodoroPause")
+  vim.cmd("Pomodoro stop")
+  vim.cmd("Pomodoro start")
+  vim.cmd("Pomodoro pause")
   eq(State.current.phase, State.PHASE.PAUSED, "paused")
-  vim.cmd("PomodoroResume")
+  vim.cmd("Pomodoro resume")
   eq(State.current.phase, State.PHASE.WORK, "resumed")
-  vim.cmd("PomodoroStop")
+  vim.cmd("Pomodoro stop")
 end)
 
-step(":PomodoroStats mentions streak", function()
+step(":Pomodoro stats mentions streak", function()
   notes = {}
-  vim.cmd("PomodoroStats")
+  vim.cmd("Pomodoro stats")
   local out = table.concat(notes, "\n")
   assert(out:find("Streak:"), "no streak line in: " .. out)
   assert(out:find("Today: 1 work"), "wrong today count in: " .. out)
 end)
 
-step(":PomodoroHistory opens a float with data + streak", function()
-  vim.cmd("PomodoroHistory 5")
+step(":Pomodoro history opens a float with data + streak", function()
+  vim.cmd("Pomodoro history 5")
   local float_buf
   for _, w in ipairs(vim.api.nvim_list_wins()) do
     if vim.api.nvim_win_get_config(w).relative ~= "" then
@@ -150,25 +154,31 @@ step("stats persisted to disk (restart survival)", function()
 end)
 
 -- probes
-step("probe: :PomodoroStart -5 rejected", function()
+step("probe: :Pomodoro start -5 rejected", function()
   notes = {}
-  vim.cmd("PomodoroStart -5")
+  vim.cmd("Pomodoro start -5")
   eq(State.current.phase, State.PHASE.IDLE, "still idle")
   assert(table.concat(notes, " "):find("positive"), "no warning shown")
 end)
 
 step("probe: double start warns", function()
-  vim.cmd("PomodoroStart")
+  vim.cmd("Pomodoro start")
   notes = {}
-  vim.cmd("PomodoroStart")
+  vim.cmd("Pomodoro start")
   assert(table.concat(notes, " "):find("Already running"), "no already-running warning")
-  vim.cmd("PomodoroStop")
+  vim.cmd("Pomodoro stop")
+end)
+
+step("probe: unknown subcommand shows usage", function()
+  notes = {}
+  vim.cmd("Pomodoro bogus")
+  assert(table.concat(notes, " "):find("Usage: :Pomodoro"), "no usage message shown")
 end)
 
 step("probe: skip/restart when idle warn instead of erroring", function()
   notes = {}
-  vim.cmd("PomodoroSkip")
-  vim.cmd("PomodoroRestart")
+  vim.cmd("Pomodoro skip")
+  vim.cmd("Pomodoro restart")
   local out = table.concat(notes, " ")
   assert(out:find("Nothing to skip") and out:find("Nothing to restart"), out)
 end)

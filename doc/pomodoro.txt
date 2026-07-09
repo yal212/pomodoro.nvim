@@ -33,12 +33,7 @@ Lazy.nvim:
   {
     "yal212/pomodoro.nvim",
     opts = {},
-    cmd = {
-      "PomodoroStart", "PomodoroPause", "PomodoroResume",
-      "PomodoroStop",  "PomodoroSkip",  "PomodoroRestart",
-      "PomodoroStatus", "PomodoroStats", "PomodoroHistory",
-      "PomodoroReset",
-    },
+    cmd = "Pomodoro",
   }
 <
 Or manually:
@@ -94,43 +89,47 @@ Defaults: >lua
 ==============================================================================
 4. COMMANDS                                               *pomodoro-commands*
 
-                                                          *:PomodoroStart*
-:PomodoroStart [{phase}|{minutes}]
+                                                                 *:Pomodoro*
+:Pomodoro {subcommand} [{args}]
+    Single entry point for all actions. Subcommands are case-insensitive
+    (`:Pomodoro Start` == `:Pomodoro start`) and complete with <Tab>.
+
+:Pomodoro start [{phase}|{minutes}]                       *:Pomodoro-start*
     Start a phase. {phase} is one of `work`, `short`, `long`. A number
     instead starts a one-off work block of that many minutes without
     changing the configured durations. If omitted, starts the next phase
     in the cycle (or resumes if paused).
 
-:PomodoroPause                                            *:PomodoroPause*
+:Pomodoro pause                                           *:Pomodoro-pause*
     Pause the active phase. Remaining time is preserved.
 
-:PomodoroResume                                           *:PomodoroResume*
+:Pomodoro resume                                         *:Pomodoro-resume*
     Resume from a pause.
 
-:PomodoroStop                                             *:PomodoroStop*
+:Pomodoro stop                                             *:Pomodoro-stop*
     Stop the active pomodoro and reset to idle.
 
-:PomodoroSkip                                             *:PomodoroSkip*
+:Pomodoro skip                                             *:Pomodoro-skip*
     End the current phase immediately and advance to the next. A skipped
     phase records no stats, does not count toward the daily goal or the
     long-break cadence, and fires no completion hooks.
 
-:PomodoroRestart                                        *:PomodoroRestart*
+:Pomodoro restart                                       *:Pomodoro-restart*
     Restart the current phase from the beginning.
 
-:PomodoroStatus                                           *:PomodoroStatus*
+:Pomodoro status                                         *:Pomodoro-status*
     Toggle the floating status window.
 
-:PomodoroStats                                            *:PomodoroStats*
+:Pomodoro stats                                           *:Pomodoro-stats*
     Print today + last 7 days summary and the current streak via
     |vim.notify|.
 
-:PomodoroHistory [{days}]                               *:PomodoroHistory*
+:Pomodoro history [{days}]                               *:Pomodoro-history*
     Show the last {days} days (default 14) in a centered floating window
     with per-day work counts, focused minutes, and the current streak.
     Close with `q` or `<Esc>`. Works without Telescope.
 
-:PomodoroReset                                            *:PomodoroReset*
+:Pomodoro reset                                           *:Pomodoro-reset*
     Wipe persisted stats (with confirm).
 
 ==============================================================================

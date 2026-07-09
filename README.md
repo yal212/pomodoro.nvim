@@ -32,10 +32,10 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 ## ✨ Features
 
 - 🍅 **Classic Pomodoro cycles** — 25 / 5 / 15 minute defaults, long break every 4th work block, all configurable
-- ⏱️ **One-off durations** — `:PomodoroStart 45` runs a single 45-minute block without touching your config
+- ⏱️ **One-off durations** — `:Pomodoro start 45` runs a single 45-minute block without touching your config
 - 🔔 **Editor-native notifications** — `vim.notify` (lights up [`nvim-notify`](https://github.com/rcarriga/nvim-notify) / [`noice`](https://github.com/folke/noice.nvim) automatically) and/or a transient floating window
 - 📊 **Per-day stats** — completed work blocks, focused minutes, long-break count, persisted atomically as JSON
-- 📅 **History & streaks** — `:PomodoroHistory` floats the last N days; streaks track consecutive days hitting your goal
+- 📅 **History & streaks** — `:Pomodoro history` floats the last N days; streaks track consecutive days hitting your goal
 - 🔉 **Sound alerts (opt-in)** — play any system command on phase end; sensible macOS default
 - 🪟 **Toggleable status window** — pinned, borderless card with phase-colored header, live progress bar, and today counter
 - 🛎️ **Continue / stop prompt** — when auto-start is off, each phase ends with a `vim.ui.select` asking whether to begin the next phase or stop
@@ -44,7 +44,7 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 - 🔭 **Optional Telescope picker** — last 30 days at a glance, only loaded if Telescope is present
 - 🪝 **Hooks** — `on_work_start`, `on_break_start`, `on_cycle_complete`, … wire your own behavior
 - 🪶 **Zero required dependencies** — pure Lua, stdlib only
-- ✅ **Tested** — 66 plenary-busted specs, CI on stable + nightly Neovim
+- ✅ **Tested** — 72 plenary-busted specs, CI on stable + nightly Neovim
 
 ## 📦 Requirements
 
@@ -60,12 +60,7 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 ```lua
 {
   "yal212/pomodoro.nvim",
-  cmd = {
-    "PomodoroStart", "PomodoroPause", "PomodoroResume",
-    "PomodoroStop",  "PomodoroSkip",  "PomodoroRestart",
-    "PomodoroStatus", "PomodoroStats", "PomodoroHistory",
-    "PomodoroReset",
-  },
+  cmd = "Pomodoro",
   ---@type pomodoro.Config
   opts = {
     -- your config; see :help pomodoro-config
@@ -104,28 +99,30 @@ lua require("pomodoro").setup({})
 ## 🚀 Quickstart
 
 ```vim
-:PomodoroStart           " 25-minute work block
-:PomodoroStart 45        " one-off 45-minute work block
-:PomodoroSkip            " end current phase, advance to next (doesn't count it)
-:PomodoroRestart         " restart current phase from the beginning
-:PomodoroStatus          " toggle floating status window
-:PomodoroPause           " pause; remaining time preserved
-:PomodoroResume
-:PomodoroStop
-:PomodoroStats           " today + last 7 days + streak
-:PomodoroHistory         " last 14 days in a float (q/<Esc> closes)
+:Pomodoro start          " 25-minute work block
+:Pomodoro start 45       " one-off 45-minute work block
+:Pomodoro skip           " end current phase, advance to next (doesn't count it)
+:Pomodoro restart        " restart current phase from the beginning
+:Pomodoro status         " toggle floating status window
+:Pomodoro pause          " pause; remaining time preserved
+:Pomodoro resume
+:Pomodoro stop
+:Pomodoro stats          " today + last 7 days + streak
+:Pomodoro history        " last 14 days in a float (q/<Esc> closes)
 ```
+
+Subcommands are case-insensitive — `:Pomodoro Start` works too — and `<Tab>` completes them.
 
 Suggested keymaps:
 
 ```lua
 local map = vim.keymap.set
-map("n", "<leader>ps", "<cmd>PomodoroStart<cr>",  { desc = "Pomodoro: start" })
-map("n", "<leader>pp", "<cmd>PomodoroPause<cr>",  { desc = "Pomodoro: pause" })
-map("n", "<leader>pr", "<cmd>PomodoroResume<cr>", { desc = "Pomodoro: resume" })
-map("n", "<leader>px", "<cmd>PomodoroStop<cr>",   { desc = "Pomodoro: stop" })
-map("n", "<leader>pw", "<cmd>PomodoroStatus<cr>", { desc = "Pomodoro: window" })
-map("n", "<leader>pS", "<cmd>PomodoroStats<cr>",  { desc = "Pomodoro: stats" })
+map("n", "<leader>ps", "<cmd>Pomodoro start<cr>",  { desc = "Pomodoro: start" })
+map("n", "<leader>pp", "<cmd>Pomodoro pause<cr>",  { desc = "Pomodoro: pause" })
+map("n", "<leader>pr", "<cmd>Pomodoro resume<cr>", { desc = "Pomodoro: resume" })
+map("n", "<leader>px", "<cmd>Pomodoro stop<cr>",   { desc = "Pomodoro: stop" })
+map("n", "<leader>pw", "<cmd>Pomodoro status<cr>", { desc = "Pomodoro: window" })
+map("n", "<leader>pS", "<cmd>Pomodoro stats<cr>",  { desc = "Pomodoro: stats" })
 ```
 
 ## ⚙️ Configuration
@@ -152,7 +149,7 @@ require("pomodoro").setup({
 
   -- Phase transition behavior
   auto_start_break = true,   -- break begins immediately; if false a Continue/Stop prompt appears
-  auto_start_work  = false,  -- next work block requires :PomodoroStart (or Continue from prompt)
+  auto_start_work  = false,  -- next work block requires :Pomodoro start (or Continue from prompt)
 
   -- Notification channels (any subset, in display order)
   notify_styles = { "vim_notify", "float" },
@@ -225,18 +222,20 @@ require("pomodoro").setup({
 
 ## 📋 Commands
 
-| Command | Args | Description |
+Everything lives under a single `:Pomodoro {subcommand}` command. Subcommands are case-insensitive (`:Pomodoro Start` == `:Pomodoro start`) and `<Tab>`-completable.
+
+| Subcommand | Args | Description |
 | :--- | :--- | :--- |
-| `:PomodoroStart`  | `[work\|short\|long\|{minutes}]` | Start a phase. Defaults to next in cycle, or resumes if paused. A number starts a one-off work block of that length. |
-| `:PomodoroPause`  | — | Pause the active phase, preserving remaining time. |
-| `:PomodoroResume` | — | Resume a paused phase. |
-| `:PomodoroStop`   | — | Stop and reset to idle. |
-| `:PomodoroSkip`   | — | End the current phase immediately and advance. Skipped work blocks are **not** counted in stats or hooks. |
-| `:PomodoroRestart` | — | Restart the current phase from the beginning. |
-| `:PomodoroStatus` | — | Toggle the floating status window. |
-| `:PomodoroStats`  | — | Show today + last 7 days summary and current streak. |
-| `:PomodoroHistory` | `[{days}]` | Float the last N days (default 14). Close with `q` or `<Esc>`. |
-| `:PomodoroReset`  | — | Wipe persisted stats (with confirm prompt). |
+| `:Pomodoro start`  | `[work\|short\|long\|{minutes}]` | Start a phase. Defaults to next in cycle, or resumes if paused. A number starts a one-off work block of that length. |
+| `:Pomodoro pause`  | — | Pause the active phase, preserving remaining time. |
+| `:Pomodoro resume` | — | Resume a paused phase. |
+| `:Pomodoro stop`   | — | Stop and reset to idle. |
+| `:Pomodoro skip`   | — | End the current phase immediately and advance. Skipped work blocks are **not** counted in stats or hooks. |
+| `:Pomodoro restart` | — | Restart the current phase from the beginning. |
+| `:Pomodoro status` | — | Toggle the floating status window. |
+| `:Pomodoro stats`  | — | Show today + last 7 days summary and current streak. |
+| `:Pomodoro history` | `[{days}]` | Float the last N days (default 14). Close with `q` or `<Esc>`. |
+| `:Pomodoro reset`  | — | Wipe persisted stats (with confirm prompt). |
 
 ## 🧰 Lua API
 
