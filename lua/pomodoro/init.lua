@@ -58,18 +58,23 @@ local function start_phase(phase)
   end)
 end
 
-function M._on_phase_end(phase)
+-- ctx.skipped: the phase was cut short via :PomodoroSkip — advance to the
+-- next phase but record no stats and fire no completion hooks.
+function M._on_phase_end(phase, ctx)
+  ctx = ctx or {}
   local opts = Config.get()
 
   if phase == State.PHASE.WORK then
-    State.current.cycle_index = State.current.cycle_index + 1
-    State.current.completed_today = State.current.completed_today + 1
-    Stats.record_work_complete()
     Focus.on_work_end()
-    call_hook("on_work_end", { cycle_index = State.current.cycle_index })
+    if not ctx.skipped then
+      State.current.cycle_index = State.current.cycle_index + 1
+      State.current.completed_today = State.current.completed_today + 1
+      Stats.record_work_complete()
+      call_hook("on_work_end", { cycle_index = State.current.cycle_index })
+    end
 
     local next_phase = Cycle.next_after_work(State.current.cycle_index, opts.cycles_per_long_break)
-    if next_phase == State.PHASE.LONG_BREAK then
+    if next_phase == State.PHASE.LONG_BREAK and not ctx.skipped then
       State.current.cycle_index = 0
       call_hook("on_cycle_complete", {})
     end
@@ -83,10 +88,12 @@ function M._on_phase_end(phase)
       end)
     end
   elseif phase == State.PHASE.SHORT_BREAK or phase == State.PHASE.LONG_BREAK then
-    if phase == State.PHASE.LONG_BREAK then
-      Stats.record_long_break_complete()
+    if not ctx.skipped then
+      if phase == State.PHASE.LONG_BREAK then
+        Stats.record_long_break_complete()
+      end
+      call_hook("on_break_end", { kind = phase == State.PHASE.LONG_BREAK and "long" or "short" })
     end
-    call_hook("on_break_end", { kind = phase == State.PHASE.LONG_BREAK and "long" or "short" })
 
     if opts.auto_start_work then
       start_phase(State.PHASE.WORK)
@@ -162,7 +169,7 @@ function M.skip()
   end
   local phase = State.current.phase
   Timer.stop()
-  M._on_phase_end(phase)
+  M._on_phase_end(phase, { skipped = true })
 end
 
 function M.restart()
