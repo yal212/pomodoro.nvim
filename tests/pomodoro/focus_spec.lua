@@ -58,10 +58,15 @@ describe("focus", function()
       end
     end)
 
-    it("dims windows opened mid-phase", function()
+    it("dims windows opened mid-phase and undims them on work end", function()
       Focus.on_work_start()
       vim.cmd("split")
-      assert.is_true(dimmed(vim.api.nvim_get_current_win()))
+      local w = vim.api.nvim_get_current_win()
+      assert.is_true(dimmed(w))
+      -- the split inherited the dimmed winhighlight; make sure the saved
+      -- restore value doesn't keep it dimmed forever
+      Focus.on_work_end()
+      assert.is_false(dimmed(w))
     end)
 
     it("restores previous winhighlight on work end", function()

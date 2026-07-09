@@ -8,6 +8,21 @@ local saved_diagnostic_config
 local dimmed_wins = {} -- win id -> saved winhighlight string
 local dimming = false
 
+local DIM_ENTRY = "NormalNC:PomodoroDimNC"
+
+-- Split windows inherit their parent's winhighlight, so a window created
+-- mid-phase may already carry the dim entry; strip it before saving or the
+-- "restore" value would keep the window dimmed forever.
+local function strip_dim(wh)
+  local parts = {}
+  for part in wh:gmatch("[^,]+") do
+    if part ~= DIM_ENTRY then
+      parts[#parts + 1] = part
+    end
+  end
+  return table.concat(parts, ",")
+end
+
 -- NormalNC only applies to unfocused windows, so dimming every normal window
 -- makes the effect follow the cursor without per-focus bookkeeping.
 local function dim_win(w)
@@ -17,10 +32,9 @@ local function dim_win(w)
   if vim.api.nvim_win_get_config(w).relative ~= "" then
     return
   end
-  local saved = vim.wo[w].winhighlight
+  local saved = strip_dim(vim.wo[w].winhighlight)
   dimmed_wins[w] = saved
-  local entry = "NormalNC:PomodoroDimNC"
-  vim.wo[w].winhighlight = saved ~= "" and (saved .. "," .. entry) or entry
+  vim.wo[w].winhighlight = saved ~= "" and (saved .. "," .. DIM_ENTRY) or DIM_ENTRY
 end
 
 local function blocked_set()
