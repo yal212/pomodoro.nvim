@@ -80,6 +80,31 @@ function M.last_n_days(n)
   return out
 end
 
+--- Current streak in days: consecutive days meeting daily_goal (or >= 1
+--- completed block when no goal is set), counted back from yesterday.
+--- Today extends the streak once it qualifies, but a zero today doesn't
+--- break a streak that ran through yesterday.
+function M.streak(goal)
+  local threshold = (goal and goal > 0) and goal or 1
+  local db = M.db()
+  local function meets(days_ago)
+    local key = os.date("%Y-%m-%d", os.time() - days_ago * 86400)
+    local d = db.days[key]
+    return d ~= nil and d.completed_work >= threshold
+  end
+  local n = 0
+  for i = 1, 3650 do
+    if not meets(i) then
+      break
+    end
+    n = n + 1
+  end
+  if meets(0) then
+    n = n + 1
+  end
+  return n
+end
+
 function M.reset()
   M._db = Persistence.empty_db()
   M.save()

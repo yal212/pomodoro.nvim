@@ -234,6 +234,7 @@ function M.stats_summary()
       today.minutes_focused
     ),
     string.format("Last 7 days: %d work blocks", week_total),
+    string.format("Streak: %d day(s)", Stats.streak(Config.get().daily_goal)),
     "",
   }
   for _, row in ipairs(week) do
@@ -257,6 +258,8 @@ function M.history(n)
       bar
     )
   end
+  lines[#lines + 1] = ""
+  lines[#lines + 1] = string.format(" Streak: %d day(s) ", Stats.streak(Config.get().daily_goal))
   require("pomodoro.ui.float").open_panel(lines)
 end
 

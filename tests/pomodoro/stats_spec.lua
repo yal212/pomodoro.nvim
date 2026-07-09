@@ -45,4 +45,47 @@ describe("stats", function()
     assert.equals(0, rows[2].data.completed_work) -- gap day filled with zeros
     assert.equals(2, rows[3].data.completed_work)
   end)
+
+  describe("streak", function()
+    local function key(days_ago)
+      return os.date("%Y-%m-%d", os.time() - days_ago * 86400)
+    end
+
+    it("is 0 for an empty db", function()
+      assert.equals(0, Stats.streak(0))
+    end)
+
+    it("counts consecutive days with any work when no goal is set", function()
+      Stats._db = {
+        version = 1,
+        days = { [key(0)] = day(1), [key(1)] = day(2), [key(2)] = day(1) },
+      }
+      assert.equals(3, Stats.streak(0))
+    end)
+
+    it("a gap breaks the streak", function()
+      Stats._db = {
+        version = 1,
+        days = { [key(1)] = day(2), [key(3)] = day(4) },
+      }
+      assert.equals(1, Stats.streak(0))
+    end)
+
+    it("a zero today preserves a streak through yesterday", function()
+      Stats._db = {
+        version = 1,
+        days = { [key(1)] = day(2), [key(2)] = day(1) },
+      }
+      assert.equals(2, Stats.streak(0))
+    end)
+
+    it("applies the daily goal as the threshold", function()
+      Stats._db = {
+        version = 1,
+        days = { [key(1)] = day(4), [key(2)] = day(3), [key(3)] = day(5) },
+      }
+      -- day(2) misses the goal of 4, so only yesterday counts
+      assert.equals(1, Stats.streak(4))
+    end)
+  end)
 end)
