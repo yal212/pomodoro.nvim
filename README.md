@@ -25,9 +25,13 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 
 ---
 
-> [!NOTE]
-> Place your demo gif at `assets/demo.gif` and uncomment the line below.
-> <!-- ![demo](./assets/demo.gif) -->
+<div align="center">
+
+![Starting a pomodoro, the pinned status window, a work→break transition, and the history float](./assets/demo.gif)
+
+<sub>Timer sped up for the demo. Reproduce it anytime: <code>vhs scripts/demo.tape</code></sub>
+
+</div>
 
 ## ✨ Features
 
@@ -416,6 +420,7 @@ Issues and PRs welcome. Please:
 1. Run the test suite and `stylua --check` before submitting
 2. Add a spec for any new behavior
 3. Keep runtime deps at zero — Telescope/notify integration must remain optional
+4. If a change alters the UI, re-record the demo: `vhs scripts/demo.tape` ([vhs](https://github.com/charmbracelet/vhs))
 
 ## 🙏 Acknowledgements
 
