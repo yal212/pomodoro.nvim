@@ -14,7 +14,8 @@ function M.start(duration_ms, on_expire)
   close()
   handle = vim.uv.new_timer()
   if not handle then
-    error("pomodoro: failed to create libuv timer", 2)
+    vim.notify("pomodoro: failed to create timer", vim.log.levels.ERROR, { title = "Pomodoro" })
+    return
   end
   handle:start(
     duration_ms,

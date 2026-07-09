@@ -165,6 +165,16 @@ function M.skip()
   M._on_phase_end(phase)
 end
 
+function M.restart()
+  if not State.is_running() then
+    Notify.send("Nothing to restart", "warn")
+    return
+  end
+  local phase = State.current.phase
+  Timer.stop()
+  start_phase(phase)
+end
+
 function M.status()
   require("pomodoro.ui.status").toggle()
 end

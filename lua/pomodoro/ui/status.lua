@@ -2,28 +2,13 @@ local Config = require("pomodoro.config")
 local State = require("pomodoro.state")
 local Cycle = require("pomodoro.cycle")
 local Statusline = require("pomodoro.statusline")
+local Highlights = require("pomodoro.ui.highlights")
 
 local M = {}
 
 local NS = vim.api.nvim_create_namespace("pomodoro_status")
 local FILL = "█"
 local TRACK = "░"
-
-local function ensure_highlights()
-  local groups = {
-    PomodoroWork = "DiagnosticWarn",
-    PomodoroBreak = "DiagnosticOk",
-    PomodoroPaused = "DiagnosticHint",
-    PomodoroIdle = "Comment",
-    PomodoroProgress = "DiagnosticInfo",
-    PomodoroProgressTrack = "NonText",
-    PomodoroDim = "Comment",
-    PomodoroTitle = "FloatTitle",
-  }
-  for name, link in pairs(groups) do
-    vim.api.nvim_set_hl(0, name, { link = link, default = true })
-  end
-end
 
 local win, buf, refresh_handle
 
@@ -33,17 +18,6 @@ local function close_refresh()
     refresh_handle:close()
   end
   refresh_handle = nil
-end
-
-local function phase_hl(phase)
-  if phase == State.PHASE.WORK then
-    return "PomodoroWork"
-  elseif phase == State.PHASE.SHORT_BREAK or phase == State.PHASE.LONG_BREAK then
-    return "PomodoroBreak"
-  elseif phase == State.PHASE.PAUSED then
-    return "PomodoroPaused"
-  end
-  return "PomodoroIdle"
 end
 
 local function phase_icon(phase, icons)
@@ -115,7 +89,7 @@ local function build()
   else
     header = string.format("%s   %s", label, time)
   end
-  push(center(header, inner), phase_hl(c.phase))
+  push(center(header, inner), Highlights.phase_hl(c.phase))
 
   push("")
 
@@ -158,7 +132,13 @@ local function build()
     while #lines < sw.height - 1 do
       push("")
     end
-    push(center(string.format("today: %d", c.completed_today), inner), "PomodoroDim")
+    local today_str = string.format("today: %d", c.completed_today)
+    if opts.daily_goal and opts.daily_goal > 0 then
+      today_str = today_str .. string.format(" / %d", opts.daily_goal)
+      local pct = math.floor(c.completed_today / opts.daily_goal * 100)
+      today_str = today_str .. string.format(" (%d%%)", pct)
+    end
+    push(center(today_str, inner), "PomodoroDim")
   end
 
   while #lines < sw.height do
@@ -213,7 +193,7 @@ function M.open()
   if M.is_open() then
     return
   end
-  ensure_highlights()
+  Highlights.ensure_highlights()
   local opts = Config.get().status_window
   buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = "wipe"
@@ -251,6 +231,12 @@ function M.open()
           close_refresh()
         end
       end)
+    )
+  else
+    vim.notify(
+      "pomodoro: failed to start status window refresh timer",
+      vim.log.levels.WARN,
+      { title = "Pomodoro" }
     )
   end
 end

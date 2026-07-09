@@ -11,13 +11,16 @@ local function open_centered(lines, opts)
   width = math.max(width, 20)
   width = math.min(width, vim.o.columns - 4)
 
-  local buf = vim.api.nvim_create_buf(false, true)
+  local ok_buf, buf = pcall(vim.api.nvim_create_buf, false, true)
+  if not ok_buf or not buf then
+    return nil, nil
+  end
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.bo[buf].modifiable = false
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].filetype = "pomodoro"
 
-  local win = vim.api.nvim_open_win(buf, false, {
+  local ok_win, win = pcall(vim.api.nvim_open_win, buf, false, {
     relative = "editor",
     width = width + 2,
     height = height,
@@ -28,6 +31,10 @@ local function open_centered(lines, opts)
     focusable = false,
     noautocmd = true,
   })
+  if not ok_win or not win then
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    return nil, nil
+  end
   vim.wo[win].winhighlight = "Normal:Normal,FloatBorder:FloatBorder"
 
   return buf, win
@@ -35,6 +42,9 @@ end
 
 function M.flash(lines, duration_ms, border)
   local buf, win = open_centered(lines, { border = border })
+  if not buf or not win then
+    return function() end
+  end
   local closed = false
   local function close()
     if closed then

@@ -7,18 +7,19 @@ M.defaults = {
     long_break = 15,
   },
   cycles_per_long_break = 4,
+  daily_goal = 0,
   auto_start_break = true,
   auto_start_work = false,
   notify_styles = { "vim_notify", "float" },
   notify = {
     float_duration_ms = 4000,
-    sound = false,
   },
   statusline = {
     icon = "",
     show_when_idle = false,
     format = "%s %s",
     refresh_ms = 250,
+    condition = nil,
   },
   status_window = {
     border = "none",
@@ -82,6 +83,12 @@ local function validate(opts)
       error("pomodoro: cycles_per_long_break must be >= 1", 2)
     end
   end
+  if opts.daily_goal ~= nil then
+    vim.validate({ daily_goal = { opts.daily_goal, "number" } })
+    if opts.daily_goal < 0 then
+      error("pomodoro: daily_goal must be >= 0", 2)
+    end
+  end
   if opts.notify_styles then
     vim.validate({ notify_styles = { opts.notify_styles, "table" } })
     for _, style in ipairs(opts.notify_styles) do
@@ -95,6 +102,11 @@ local function validate(opts)
       if fn ~= nil and type(fn) ~= "function" then
         error(("pomodoro: hooks.%s must be a function"):format(name), 2)
       end
+    end
+  end
+  if opts.statusline and opts.statusline.condition ~= nil then
+    if type(opts.statusline.condition) ~= "function" then
+      error("pomodoro: statusline.condition must be a function", 2)
     end
   end
 end

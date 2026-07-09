@@ -1,6 +1,7 @@
 local Config = require("pomodoro.config")
 local State = require("pomodoro.state")
 local Cycle = require("pomodoro.cycle")
+local Highlights = require("pomodoro.ui.highlights")
 
 local M = {}
 
@@ -11,20 +12,19 @@ local function format_remaining(ms)
   return string.format("%02d:%02d", minutes, seconds)
 end
 
-local function hl_for(phase)
-  if phase == State.PHASE.WORK then
-    return "DiagnosticWarn"
-  elseif phase == State.PHASE.SHORT_BREAK or phase == State.PHASE.LONG_BREAK then
-    return "DiagnosticOk"
-  elseif phase == State.PHASE.PAUSED then
-    return "DiagnosticHint"
-  end
-  return "Comment"
-end
-
 function M.text()
   local opts = Config.get()
   local c = State.current
+  local remaining = State.remaining_ms()
+
+  local cond = opts.statusline.condition
+  if cond and type(cond) == "function" then
+    local ok, visible = pcall(cond, { phase = c.phase, remaining_ms = remaining })
+    if ok and visible == false then
+      return ""
+    end
+  end
+
   if c.phase == State.PHASE.IDLE then
     if opts.statusline.show_when_idle then
       return string.format(opts.statusline.format, opts.statusline.icon, "Idle")
@@ -32,7 +32,6 @@ function M.text()
     return ""
   end
   local label = Cycle.label(c.phase)
-  local remaining = State.remaining_ms()
   local body
   if c.phase == State.PHASE.PAUSED then
     body = string.format("%s %s", label, format_remaining(c.remaining_ms or 0))
@@ -47,7 +46,7 @@ function M.component()
 end
 
 function M.component_lualine()
-  return { text = M.text(), hl = hl_for(State.current.phase) }
+  return { text = M.text(), hl = Highlights.phase_hl(State.current.phase) }
 end
 
 M.format_remaining = format_remaining
@@ -61,6 +60,11 @@ function M.start_redraw_loop(interval_ms)
   end
   redraw_handle = vim.uv.new_timer()
   if not redraw_handle then
+    vim.notify(
+      "pomodoro: failed to start statusline refresh timer",
+      vim.log.levels.WARN,
+      { title = "Pomodoro" }
+    )
     return
   end
   redraw_handle:start(

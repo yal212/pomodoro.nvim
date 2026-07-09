@@ -33,7 +33,14 @@ end
 
 function M.save()
   if M._db then
-    Persistence.save(M._db)
+    local ok, err = Persistence.save(M._db)
+    if not ok then
+      vim.notify(
+        "pomodoro: failed to save stats: " .. (err or "unknown error"),
+        vim.log.levels.WARN,
+        { title = "Pomodoro" }
+      )
+    end
   end
 end
 

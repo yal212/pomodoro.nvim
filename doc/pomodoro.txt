@@ -54,16 +54,23 @@ Defaults: >lua
     auto_start_break = true,    -- break starts automatically after work
     auto_start_work  = false,   -- next work block needs explicit confirm
     notify_styles    = { "vim_notify", "float" },
-    notify           = { float_duration_ms = 4000, sound = false },
-    statusline       = { icon = "", show_when_idle = false, format = "%s %s" },
+    notify           = { float_duration_ms = 4000 },
+    statusline       = { icon = "", show_when_idle = false, format = "%s %s", refresh_ms = 250, condition = nil },
     status_window    = {
-      border = "rounded", width = 30, height = 5,
-      anchor = "NE", row = 1, col_offset = 2, refresh_ms = 1000,
+      border = "none", width = 36, height = 5,
+      anchor = "NE", row = 1, col_offset = 2, refresh_ms = 250,
+      show_progress_bar = true,
+      show_today = true,
+      icons = {
+        work = "▶", short_break = "•", long_break = "★",
+        paused = "❚❚", idle = "○",
+      },
     },
     focus = {
       enabled = false,
       blocked_commands = {},     -- e.g. { "Lazy", "Mason", "Telescope" }
       silent_diagnostics = false,
+      dim_inactive = false,
     },
     persistence = { enabled = true, path = nil }, -- nil → stdpath('data')
     hooks = {
@@ -96,6 +103,9 @@ Defaults: >lua
 :PomodoroSkip                                             *:PomodoroSkip*
     End the current phase immediately and advance to the next.
 
+:PomodoroRestart                                        *:PomodoroRestart*
+    Restart the current phase from the beginning.
+
 :PomodoroStatus                                           *:PomodoroStatus*
     Toggle the floating status window.
 
@@ -111,6 +121,13 @@ Defaults: >lua
 Renderer-agnostic component:
 >lua
   require("pomodoro.statusline").component()  -- returns string
+<
+The `condition` option accepts a function receiving `{ phase, remaining_ms }` that
+returns `true` when the component should be visible:
+>lua
+  statusline = {
+    condition = function(ctx) return ctx.remaining_ms < 5 * 60 * 1000 end,
+  },
 <
 Lualine recipe:
 >lua
@@ -166,6 +183,9 @@ work.
 `silent_diagnostics = true` hides `vim.diagnostic` virtual_text during work
 and restores it on break.
 
+`dim_inactive = true` darkens all non-current windows during work blocks by
+setting their `winblend`. Restored when the work phase ends.
+
 ==============================================================================
 8. PERSISTENCE                                         *pomodoro-persistence*
 
@@ -173,6 +193,9 @@ Stats are stored at `vim.fn.stdpath('data') .. '/pomodoro/stats.json'`. The
 file is rewritten atomically (temp file + rename) on every completed work
 phase and on |VimLeavePre|. A corrupt file is moved aside as `stats.json.bak`
 and a fresh empty database is started — the plugin never crashes on bad data.
+
+Set `daily_goal` (e.g. `8`) under the top-level config to show progress toward
+a target number of work blocks per day in the status window.
 
 Schema:
 >json

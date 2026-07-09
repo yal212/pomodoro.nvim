@@ -59,8 +59,8 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
   "yal212/pomodoro.nvim",
   cmd = {
     "PomodoroStart", "PomodoroPause", "PomodoroResume",
-    "PomodoroStop",  "PomodoroSkip",  "PomodoroStatus",
-    "PomodoroStats", "PomodoroReset",
+    "PomodoroStop",  "PomodoroSkip",  "PomodoroRestart",
+    "PomodoroStatus", "PomodoroStats", "PomodoroReset",
   },
   ---@type pomodoro.Config
   opts = {
@@ -101,7 +101,9 @@ lua require("pomodoro").setup({})
 
 ```vim
 :PomodoroStart           " 25-minute work block
-:PomodoroStatus          " toggle floating status window
+:PomodoroSkip              " end current phase, advance to next
+:PomodoroRestart           " restart current phase from the beginning
+:PomodoroStatus            " toggle floating status window
 :PomodoroPause           " pause; remaining time preserved
 :PomodoroResume
 :PomodoroStop
@@ -139,6 +141,9 @@ require("pomodoro").setup({
   -- Long break every Nth completed work block
   cycles_per_long_break = 4,
 
+  -- Target work blocks per day (0 = disabled)
+  daily_goal = 0,
+
   -- Phase transition behavior
   auto_start_break = true,   -- break begins immediately; if false a Continue/Stop prompt appears
   auto_start_work  = false,  -- next work block requires :PomodoroStart (or Continue from prompt)
@@ -147,7 +152,6 @@ require("pomodoro").setup({
   notify_styles = { "vim_notify", "float" },
   notify = {
     float_duration_ms = 4000,
-    sound             = false, -- reserved; use a hook for now
   },
 
   -- Statusline component appearance
@@ -156,6 +160,7 @@ require("pomodoro").setup({
     show_when_idle  = false,
     format          = "%s %s",     -- icon, body
     refresh_ms      = 250,         -- live tick while a phase is running
+    condition       = nil,         -- function(ctx) return boolean end
   },
 
   -- Toggleable pinned status window (borderless card)
@@ -214,6 +219,7 @@ require("pomodoro").setup({
 | `:PomodoroResume` | — | Resume a paused phase. |
 | `:PomodoroStop`   | — | Stop and reset to idle. |
 | `:PomodoroSkip`   | — | End the current phase immediately and advance. |
+| `:PomodoroRestart` | — | Restart the current phase from the beginning. |
 | `:PomodoroStatus` | — | Toggle the floating status window. |
 | `:PomodoroStats`  | — | Show today + last 7 days summary. |
 | `:PomodoroReset`  | — | Wipe persisted stats (with confirm prompt). |
@@ -229,6 +235,7 @@ pomo.pause()
 pomo.resume()
 pomo.stop()
 pomo.skip()
+pomo.restart()
 pomo.status()                            -- toggle status window
 pomo.stats_summary()                     -- print today + week via vim.notify
 pomo.reset_stats()

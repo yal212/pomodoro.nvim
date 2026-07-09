@@ -33,6 +33,10 @@ function M.register()
     pomodoro().skip()
   end, { desc = "Skip the current phase" })
 
+  user_cmd("PomodoroRestart", function()
+    pomodoro().restart()
+  end, { desc = "Restart the current phase from the beginning" })
+
   user_cmd("PomodoroStatus", function()
     pomodoro().status()
   end, { desc = "Toggle the pomodoro status window" })

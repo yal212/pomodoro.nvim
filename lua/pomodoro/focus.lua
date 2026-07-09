@@ -5,6 +5,7 @@ local M = {}
 
 local augroup
 local saved_diagnostic_config
+local dimmed_wins = {}
 
 local function blocked_set()
   local set = {}
@@ -63,15 +64,25 @@ function M.setup()
 end
 
 function M.on_work_start()
-  if not Config.get().focus.enabled then
+  local opts = Config.get()
+  if not opts.focus.enabled then
     return
   end
-  if Config.get().focus.silent_diagnostics then
+  if opts.focus.silent_diagnostics then
     saved_diagnostic_config = vim.diagnostic.config()
     vim.diagnostic.config({
       virtual_text = false,
       signs = saved_diagnostic_config and saved_diagnostic_config.signs,
     })
+  end
+  if opts.focus.dim_inactive then
+    local cur = vim.api.nvim_get_current_win()
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+      if w ~= cur then
+        dimmed_wins[w] = vim.wo[w].winblend or 0
+        vim.wo[w].winblend = 30
+      end
+    end
   end
 end
 
@@ -80,6 +91,12 @@ function M.on_work_end()
     vim.diagnostic.config(saved_diagnostic_config)
     saved_diagnostic_config = nil
   end
+  for w, orig_blend in pairs(dimmed_wins) do
+    if vim.api.nvim_win_is_valid(w) then
+      vim.wo[w].winblend = orig_blend
+    end
+  end
+  dimmed_wins = {}
 end
 
 M._check_command = check_command

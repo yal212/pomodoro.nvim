@@ -92,6 +92,9 @@ function M.resume(now_ms)
   now_ms = now_ms or vim.uv.now()
   local prev = M.current.paused_from
   local remaining = M.current.remaining_ms or 0
+  if remaining <= 0 then
+    return false, nil, nil
+  end
   M.current.phase = prev
   M.current.started_at = now_ms
   M.current.ends_at = now_ms + remaining
