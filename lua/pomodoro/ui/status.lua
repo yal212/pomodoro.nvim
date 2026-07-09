@@ -132,10 +132,11 @@ local function build()
     while #lines < sw.height - 1 do
       push("")
     end
-    local today_str = string.format("today: %d", c.completed_today)
+    local done = require("pomodoro.stats").today().completed_work
+    local today_str = string.format("today: %d", done)
     if opts.daily_goal and opts.daily_goal > 0 then
       today_str = today_str .. string.format(" / %d", opts.daily_goal)
-      local pct = math.floor(c.completed_today / opts.daily_goal * 100)
+      local pct = math.floor(done / opts.daily_goal * 100)
       today_str = today_str .. string.format(" (%d%%)", pct)
     end
     push(center(today_str, inner), "PomodoroDim")

@@ -68,7 +68,6 @@ function M._on_phase_end(phase, ctx)
     Focus.on_work_end()
     if not ctx.skipped then
       State.current.cycle_index = State.current.cycle_index + 1
-      State.current.completed_today = State.current.completed_today + 1
       Stats.record_work_complete()
       call_hook("on_work_end", { cycle_index = State.current.cycle_index })
     end

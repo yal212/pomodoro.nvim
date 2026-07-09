@@ -15,7 +15,6 @@ local function fresh()
     ends_at = nil, -- ms
     remaining_ms = nil, -- only set while paused
     cycle_index = 0, -- completed work blocks since last long break
-    completed_today = 0, -- completed work blocks this nvim session
     paused_from = nil, -- phase before pause
   }
 end
