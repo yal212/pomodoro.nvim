@@ -1,4 +1,4 @@
-*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Apr 26
+*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Jul 09
 
 ==============================================================================
 CONTENTS                                                  *pomodoro-contents*
@@ -12,7 +12,8 @@ CONTENTS                                                  *pomodoro-contents*
   7. Focus mode ................................... |pomodoro-focus|
   8. Persistence .................................. |pomodoro-persistence|
   9. Telescope .................................... |pomodoro-telescope|
- 10. Health ....................................... |pomodoro-health|
+ 10. Highlights ................................... |pomodoro-highlights|
+ 11. Health ....................................... |pomodoro-health|
 
 ==============================================================================
 1. INTRODUCTION                                       *pomodoro-introduction*
@@ -34,8 +35,9 @@ Lazy.nvim:
     opts = {},
     cmd = {
       "PomodoroStart", "PomodoroPause", "PomodoroResume",
-      "PomodoroStop",  "PomodoroSkip",  "PomodoroStatus",
-      "PomodoroStats", "PomodoroReset",
+      "PomodoroStop",  "PomodoroSkip",  "PomodoroRestart",
+      "PomodoroStatus", "PomodoroStats", "PomodoroHistory",
+      "PomodoroReset",
     },
   }
 <
@@ -51,10 +53,16 @@ Defaults: >lua
   require("pomodoro").setup({
     durations = { work = 25, short_break = 5, long_break = 15 }, -- minutes
     cycles_per_long_break = 4,
+    daily_goal = 0,             -- target work blocks per day (0 = disabled)
     auto_start_break = true,    -- break starts automatically after work
     auto_start_work  = false,   -- next work block needs explicit confirm
     notify_styles    = { "vim_notify", "float" },
     notify           = { float_duration_ms = 4000 },
+    sound            = {
+      enabled = false,          -- play a sound on natural phase end
+      cmd     = nil,            -- string (via sh -c) or argv table;
+                                -- nil → afplay system sound on macOS
+    },
     statusline       = { icon = "", show_when_idle = false, format = "%s %s", refresh_ms = 250, condition = nil },
     status_window    = {
       border = "none", width = 36, height = 5,
@@ -87,9 +95,11 @@ Defaults: >lua
 4. COMMANDS                                               *pomodoro-commands*
 
                                                           *:PomodoroStart*
-:PomodoroStart [{phase}]
-    Start a phase. {phase} is one of `work`, `short`, `long`. If omitted,
-    starts the next phase in the cycle (or resumes if paused).
+:PomodoroStart [{phase}|{minutes}]
+    Start a phase. {phase} is one of `work`, `short`, `long`. A number
+    instead starts a one-off work block of that many minutes without
+    changing the configured durations. If omitted, starts the next phase
+    in the cycle (or resumes if paused).
 
 :PomodoroPause                                            *:PomodoroPause*
     Pause the active phase. Remaining time is preserved.
@@ -101,7 +111,9 @@ Defaults: >lua
     Stop the active pomodoro and reset to idle.
 
 :PomodoroSkip                                             *:PomodoroSkip*
-    End the current phase immediately and advance to the next.
+    End the current phase immediately and advance to the next. A skipped
+    phase records no stats, does not count toward the daily goal or the
+    long-break cadence, and fires no completion hooks.
 
 :PomodoroRestart                                        *:PomodoroRestart*
     Restart the current phase from the beginning.
@@ -110,7 +122,13 @@ Defaults: >lua
     Toggle the floating status window.
 
 :PomodoroStats                                            *:PomodoroStats*
-    Print today + last 7 days summary via |vim.notify|.
+    Print today + last 7 days summary and the current streak via
+    |vim.notify|.
+
+:PomodoroHistory [{days}]                               *:PomodoroHistory*
+    Show the last {days} days (default 14) in a centered floating window
+    with per-day work counts, focused minutes, and the current streak.
+    Close with `q` or `<Esc>`. Works without Telescope.
 
 :PomodoroReset                                            *:PomodoroReset*
     Wipe persisted stats (with confirm).
@@ -183,8 +201,12 @@ work.
 `silent_diagnostics = true` hides `vim.diagnostic` virtual_text during work
 and restores it on break.
 
-`dim_inactive = true` darkens all non-current windows during work blocks by
-setting their `winblend`. Restored when the work phase ends.
+`dim_inactive = true` dims all non-current windows during work blocks by
+adding a `NormalNC:PomodoroDimNC` entry to each window's 'winhighlight'
+(|hl-NormalNC| only applies to unfocused windows, so the dim follows the
+cursor). Windows opened mid-phase are dimmed too, and the previous
+'winhighlight' is restored when the work phase ends. Override the
+`PomodoroDimNC` group to tune the effect (see |pomodoro-highlights|).
 
 ==============================================================================
 8. PERSISTENCE                                         *pomodoro-persistence*
@@ -195,7 +217,14 @@ phase and on |VimLeavePre|. A corrupt file is moved aside as `stats.json.bak`
 and a fresh empty database is started — the plugin never crashes on bad data.
 
 Set `daily_goal` (e.g. `8`) under the top-level config to show progress toward
-a target number of work blocks per day in the status window.
+a target number of work blocks per day in the status window. The count is
+read from the persisted stats, so it survives restarting Neovim and rolls
+over at midnight.
+
+Streak rule: the streak is the number of consecutive days meeting
+`daily_goal` (or completing at least one work block when no goal is set),
+counted back from yesterday. A zero today does not break a streak that ran
+through yesterday; today extends the streak as soon as it qualifies.
 
 Schema:
 >json
@@ -221,12 +250,34 @@ automatically:
 <
 
 ==============================================================================
-10. HEALTH                                                  *pomodoro-health*
+10. HIGHLIGHTS                                          *pomodoro-highlights*
+
+All groups are defined with `default = true` links — override them from your
+colorscheme or config:
+
+  Group                   Default link       Used for ~
+  `PomodoroWork`            `DiagnosticWarn`     work phase header / statusline
+  `PomodoroBreak`           `DiagnosticOk`       break phase header / statusline
+  `PomodoroPaused`          `DiagnosticHint`     paused state
+  `PomodoroIdle`            `Comment`            idle state
+  `PomodoroProgress`        `DiagnosticInfo`     progress bar fill
+  `PomodoroProgressTrack`   `NonText`            progress bar track
+  `PomodoroDim`             `Comment`            muted text in the status window
+  `PomodoroDimNC`           `Comment`            dimmed windows (focus mode)
+  `PomodoroTitle`           `FloatTitle`         float titles
+
+Example: >lua
+  vim.api.nvim_set_hl(0, "PomodoroWork", { fg = "#ff9e64", bold = true })
+<
+
+==============================================================================
+11. HEALTH                                                  *pomodoro-health*
 
 >vim
   :checkhealth pomodoro
 <
-Reports Neovim version, data dir writability, and optional integrations
-(telescope, nvim-notify).
+Reports Neovim version, data dir writability, sound command availability
+(when `sound.enabled` is set), and optional integrations (telescope,
+nvim-notify).
 
 vim:tw=78:ts=8:noet:ft=help:norl:

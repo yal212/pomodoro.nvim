@@ -4,3 +4,4 @@
 .DS_Store
 tests/.deps/
 tests/site/
+doc/tags
