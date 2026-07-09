@@ -47,4 +47,46 @@ describe("config", function()
       Config.merge({ cycles_per_long_break = 0 })
     end)
   end)
+
+  it("rejects wrong duration types", function()
+    assert.has_error(function()
+      Config.merge({ durations = { work = "x" } })
+    end)
+  end)
+
+  it("validates daily_goal", function()
+    assert.has_error(function()
+      Config.merge({ daily_goal = -1 })
+    end)
+    assert.has_error(function()
+      Config.merge({ daily_goal = "four" })
+    end)
+    Config.merge({ daily_goal = 4 })
+    assert.equals(4, Config.get().daily_goal)
+  end)
+
+  it("requires statusline.condition to be a function", function()
+    assert.has_error(function()
+      Config.merge({ statusline = { condition = 5 } })
+    end)
+    Config.merge({
+      statusline = {
+        condition = function()
+          return true
+        end,
+      },
+    })
+  end)
+
+  it("accepts a full valid config", function()
+    Config.merge({
+      durations = { work = 50, short_break = 10, long_break = 30 },
+      cycles_per_long_break = 3,
+      daily_goal = 8,
+      notify_styles = { "vim_notify" },
+      hooks = { on_work_start = function() end },
+    })
+    assert.equals(50, Config.get().durations.work)
+    assert.equals(8, Config.get().daily_goal)
+  end)
 end)

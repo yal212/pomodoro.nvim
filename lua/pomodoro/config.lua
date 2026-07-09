@@ -60,17 +60,26 @@ M.defaults = {
 
 M.options = vim.deepcopy(M.defaults)
 
+-- vim.validate's table form is deprecated on 0.11+ and its replacement
+-- signature does not exist on 0.10, so use a local check instead.
+local function check(name, value, expected, optional)
+  if value == nil and optional then
+    return
+  end
+  if type(value) ~= expected then
+    error(("pomodoro: %s must be a %s (got %s)"):format(name, expected, type(value)), 3)
+  end
+end
+
 local function validate(opts)
-  vim.validate({ opts = { opts, "table", true } })
+  check("opts", opts, "table", true)
   if not opts then
     return
   end
   if opts.durations then
-    vim.validate({
-      ["durations.work"] = { opts.durations.work, "number", true },
-      ["durations.short_break"] = { opts.durations.short_break, "number", true },
-      ["durations.long_break"] = { opts.durations.long_break, "number", true },
-    })
+    check("durations.work", opts.durations.work, "number", true)
+    check("durations.short_break", opts.durations.short_break, "number", true)
+    check("durations.long_break", opts.durations.long_break, "number", true)
     for k, v in pairs(opts.durations) do
       if type(v) == "number" and v <= 0 then
         error(("pomodoro: durations.%s must be > 0 (got %s)"):format(k, tostring(v)), 2)
@@ -78,19 +87,19 @@ local function validate(opts)
     end
   end
   if opts.cycles_per_long_break ~= nil then
-    vim.validate({ cycles_per_long_break = { opts.cycles_per_long_break, "number" } })
+    check("cycles_per_long_break", opts.cycles_per_long_break, "number")
     if opts.cycles_per_long_break < 1 then
       error("pomodoro: cycles_per_long_break must be >= 1", 2)
     end
   end
   if opts.daily_goal ~= nil then
-    vim.validate({ daily_goal = { opts.daily_goal, "number" } })
+    check("daily_goal", opts.daily_goal, "number")
     if opts.daily_goal < 0 then
       error("pomodoro: daily_goal must be >= 0", 2)
     end
   end
   if opts.notify_styles then
-    vim.validate({ notify_styles = { opts.notify_styles, "table" } })
+    check("notify_styles", opts.notify_styles, "table")
     for _, style in ipairs(opts.notify_styles) do
       if style ~= "vim_notify" and style ~= "float" then
         error(("pomodoro: unknown notify style %q (use vim_notify or float)"):format(style), 2)
