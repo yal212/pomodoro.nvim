@@ -39,6 +39,13 @@ local function start_phase(phase)
   if duration_ms <= 0 then
     return
   end
+  -- start the timer first so a failure can't leave state "running"
+  local started = Timer.start(duration_ms, function()
+    M._on_phase_end(phase)
+  end)
+  if not started then
+    return
+  end
   State.set_phase(phase, duration_ms)
 
   if phase == State.PHASE.WORK then
@@ -52,10 +59,6 @@ local function start_phase(phase)
     Notify.send(string.format("Long break — %d min", opts.durations.long_break))
     call_hook("on_break_start", { kind = "long", duration_min = opts.durations.long_break })
   end
-
-  Timer.start(duration_ms, function()
-    M._on_phase_end(phase)
-  end)
 end
 
 -- ctx.skipped: the phase was cut short via :PomodoroSkip — advance to the
@@ -148,9 +151,13 @@ function M.resume()
     Notify.send("Nothing to resume", "warn")
     return
   end
-  Timer.start(remaining, function()
+  local started = Timer.start(remaining, function()
     M._on_phase_end(prev_phase)
   end)
+  if not started then
+    State.pause() -- roll back to the paused state
+    return
+  end
   Notify.send("Resumed")
 end
 

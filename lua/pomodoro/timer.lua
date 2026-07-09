@@ -10,12 +10,13 @@ local function close()
   handle = nil
 end
 
+--- @return boolean started
 function M.start(duration_ms, on_expire)
   close()
   handle = vim.uv.new_timer()
   if not handle then
     vim.notify("pomodoro: failed to create timer", vim.log.levels.ERROR, { title = "Pomodoro" })
-    return
+    return false
   end
   handle:start(
     duration_ms,
@@ -27,6 +28,7 @@ function M.start(duration_ms, on_expire)
       end
     end)
   )
+  return true
 end
 
 function M.stop()

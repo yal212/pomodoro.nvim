@@ -34,6 +34,9 @@ describe("init state machine", function()
     fake = { running = false }
     package.loaded["pomodoro.timer"] = {
       start = function(ms, cb)
+        if fake.fail then
+          return false
+        end
         fake.ms, fake.cb, fake.running = ms, cb, true
         return true
       end,
@@ -112,6 +115,23 @@ describe("init state machine", function()
     assert.equals(State.PHASE.LONG_BREAK, State.current.phase)
     pomo.skip()
     assert.equals(0, Stats.today().completed_long_breaks)
+  end)
+
+  it("stays IDLE when the timer fails to start", function()
+    setup()
+    fake.fail = true
+    pomo.start()
+    assert.equals(State.PHASE.IDLE, State.current.phase)
+    assert.is_false(called("on_work_start"))
+  end)
+
+  it("returns to PAUSED when the timer fails on resume", function()
+    setup()
+    pomo.start()
+    pomo.pause()
+    fake.fail = true
+    pomo.resume()
+    assert.equals(State.PHASE.PAUSED, State.current.phase)
   end)
 
   it("restart restores the full phase duration", function()
