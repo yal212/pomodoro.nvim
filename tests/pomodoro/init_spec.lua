@@ -117,6 +117,35 @@ describe("init state machine", function()
     assert.equals(0, Stats.today().completed_long_breaks)
   end)
 
+  it("accepts a one-off duration override without touching config", function()
+    setup({ auto_start_break = true })
+    pomo.start("45")
+    assert.equals(State.PHASE.WORK, State.current.phase)
+    assert.equals(45 * 60 * 1000, fake.ms)
+    assert.equals(45 * 60 * 1000, State.current.duration_ms)
+    assert.equals(25, require("pomodoro.config").get().durations.work)
+    fake.cb()
+    assert.equals(45, Stats.today().minutes_focused)
+    -- the following break falls back to the configured length
+    assert.equals(5 * 60 * 1000, fake.ms)
+  end)
+
+  it("rejects non-positive duration overrides", function()
+    setup()
+    pomo.start("0")
+    assert.equals(State.PHASE.IDLE, State.current.phase)
+    pomo.start(-5)
+    assert.equals(State.PHASE.IDLE, State.current.phase)
+  end)
+
+  it("restart keeps a duration override", function()
+    setup()
+    pomo.start({ minutes = 45 })
+    fake.ms = nil
+    pomo.restart()
+    assert.equals(45 * 60 * 1000, fake.ms)
+  end)
+
   it("stays IDLE when the timer fails to start", function()
     setup()
     fake.fail = true

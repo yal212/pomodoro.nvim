@@ -52,6 +52,17 @@ describe("state machine", function()
     assert.is_false(ok)
   end)
 
+  it("keeps duration_ms through pause/resume and clears it on idle", function()
+    State.set_phase(State.PHASE.WORK, 60 * 1000, 0)
+    assert.equals(60 * 1000, State.current.duration_ms)
+    State.pause(20 * 1000)
+    assert.equals(60 * 1000, State.current.duration_ms)
+    State.resume(30 * 1000)
+    assert.equals(60 * 1000, State.current.duration_ms)
+    State.set_phase(State.PHASE.IDLE, 0)
+    assert.is_nil(State.current.duration_ms)
+  end)
+
   it("reset returns to idle", function()
     State.set_phase(State.PHASE.WORK, 1000, 0)
     State.current.cycle_index = 3

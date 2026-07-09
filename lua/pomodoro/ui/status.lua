@@ -74,7 +74,7 @@ local function build()
   if c.phase == State.PHASE.PAUSED then
     label = label .. " (paused)"
   end
-  local total_ms = Cycle.duration_ms(label_phase, opts.durations)
+  local total_ms = c.duration_ms or Cycle.duration_ms(label_phase, opts.durations)
   local remaining_ms
   if c.phase == State.PHASE.PAUSED then
     remaining_ms = c.remaining_ms or 0

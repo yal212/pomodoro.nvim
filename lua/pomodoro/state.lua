@@ -14,6 +14,7 @@ local function fresh()
     started_at = nil, -- ms (vim.uv.now)
     ends_at = nil, -- ms
     remaining_ms = nil, -- only set while paused
+    duration_ms = nil, -- total length of the current phase (kept while paused)
     cycle_index = 0, -- completed work blocks since last long break
     paused_from = nil, -- phase before pause
   }
@@ -62,9 +63,13 @@ function M.set_phase(phase, duration_ms, now_ms)
   if phase == M.PHASE.IDLE or phase == M.PHASE.PAUSED then
     M.current.started_at = nil
     M.current.ends_at = nil
+    if phase == M.PHASE.IDLE then
+      M.current.duration_ms = nil
+    end
   else
     M.current.started_at = now_ms
     M.current.ends_at = now_ms + duration_ms
+    M.current.duration_ms = duration_ms
     M.current.remaining_ms = nil
     M.current.paused_from = nil
   end

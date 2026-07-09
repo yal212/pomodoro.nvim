@@ -44,11 +44,13 @@ function M.save()
   end
 end
 
-function M.record_work_complete()
+--- @param minutes number|nil actual block length; defaults to the configured
+---   work duration
+function M.record_work_complete(minutes)
   local db = M.db()
   local day = ensure_day(db, today_key())
   day.completed_work = day.completed_work + 1
-  day.minutes_focused = day.minutes_focused + Config.get().durations.work
+  day.minutes_focused = day.minutes_focused + (minutes or Config.get().durations.work)
   M.save()
 end
 

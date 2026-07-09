@@ -33,9 +33,12 @@ local function prompt_continue(next_phase, on_continue)
   end)
 end
 
-local function start_phase(phase)
+-- override_min: one-off phase length in minutes (:PomodoroStart 45); the
+-- configured durations are untouched.
+local function start_phase(phase, override_min)
   local opts = Config.get()
-  local duration_ms = Cycle.duration_ms(phase, opts.durations)
+  local duration_ms = override_min and math.floor(override_min * 60 * 1000)
+    or Cycle.duration_ms(phase, opts.durations)
   if duration_ms <= 0 then
     return
   end
@@ -48,16 +51,17 @@ local function start_phase(phase)
   end
   State.set_phase(phase, duration_ms)
 
+  local minutes = math.floor(duration_ms / 60000 + 0.5)
   if phase == State.PHASE.WORK then
-    Notify.send(string.format("Work started — %d min", opts.durations.work))
+    Notify.send(string.format("Work started — %d min", minutes))
     Focus.on_work_start()
-    call_hook("on_work_start", { duration_min = opts.durations.work })
+    call_hook("on_work_start", { duration_min = minutes })
   elseif phase == State.PHASE.SHORT_BREAK then
-    Notify.send(string.format("Short break — %d min", opts.durations.short_break))
-    call_hook("on_break_start", { kind = "short", duration_min = opts.durations.short_break })
+    Notify.send(string.format("Short break — %d min", minutes))
+    call_hook("on_break_start", { kind = "short", duration_min = minutes })
   elseif phase == State.PHASE.LONG_BREAK then
-    Notify.send(string.format("Long break — %d min", opts.durations.long_break))
-    call_hook("on_break_start", { kind = "long", duration_min = opts.durations.long_break })
+    Notify.send(string.format("Long break — %d min", minutes))
+    call_hook("on_break_start", { kind = "long", duration_min = minutes })
   end
 end
 
@@ -71,7 +75,9 @@ function M._on_phase_end(phase, ctx)
     Focus.on_work_end()
     if not ctx.skipped then
       State.current.cycle_index = State.current.cycle_index + 1
-      Stats.record_work_complete()
+      local minutes = State.current.duration_ms
+        and math.floor(State.current.duration_ms / 60000 + 0.5)
+      Stats.record_work_complete(minutes)
       call_hook("on_work_end", { cycle_index = State.current.cycle_index })
     end
 
@@ -118,9 +124,26 @@ local function next_phase_from_idle()
   return State.PHASE.WORK
 end
 
+--- @param arg string|number|table|nil "work"/"short"/"long", a minute count
+---   for a one-off work block, or { minutes = n }
 function M.start(arg)
+  local override_min
+  if type(arg) == "table" then
+    override_min = tonumber(arg.minutes)
+    arg = nil
+  elseif type(arg) == "number" or (type(arg) == "string" and tonumber(arg)) then
+    override_min = tonumber(arg)
+    arg = nil
+  end
+  if override_min ~= nil and override_min <= 0 then
+    Notify.send("Duration must be a positive number of minutes", "warn")
+    return
+  end
+
   local target
-  if arg == "work" then
+  if override_min then
+    target = State.PHASE.WORK
+  elseif arg == "work" then
     target = State.PHASE.WORK
   elseif arg == "short" then
     target = State.PHASE.SHORT_BREAK
@@ -135,7 +158,7 @@ function M.start(arg)
     target = next_phase_from_idle()
   end
   Timer.stop()
-  start_phase(target)
+  start_phase(target, override_min)
 end
 
 function M.pause()
@@ -184,8 +207,9 @@ function M.restart()
     return
   end
   local phase = State.current.phase
+  local override_min = State.current.duration_ms and State.current.duration_ms / 60000
   Timer.stop()
-  start_phase(phase)
+  start_phase(phase, override_min)
 end
 
 function M.status()
