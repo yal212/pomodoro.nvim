@@ -32,4 +32,17 @@ describe("stats", function()
     Stats.record_work_complete()
     assert.equals(4, Stats.today().completed_work)
   end)
+
+  it("last_n_days is oldest-first, ends today, and fills gaps", function()
+    local today = os.date("%Y-%m-%d")
+    local two_ago = os.date("%Y-%m-%d", os.time() - 2 * 86400)
+    Stats._db = { version = 1, days = { [today] = day(2), [two_ago] = day(5) } }
+    local rows = Stats.last_n_days(3)
+    assert.equals(3, #rows)
+    assert.equals(two_ago, rows[1].date)
+    assert.equals(today, rows[3].date)
+    assert.equals(5, rows[1].data.completed_work)
+    assert.equals(0, rows[2].data.completed_work) -- gap day filled with zeros
+    assert.equals(2, rows[3].data.completed_work)
+  end)
 end)

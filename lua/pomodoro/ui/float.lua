@@ -20,7 +20,7 @@ local function open_centered(lines, opts)
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].filetype = "pomodoro"
 
-  local ok_win, win = pcall(vim.api.nvim_open_win, buf, false, {
+  local ok_win, win = pcall(vim.api.nvim_open_win, buf, opts.enter or false, {
     relative = "editor",
     width = width + 2,
     height = height,
@@ -28,7 +28,7 @@ local function open_centered(lines, opts)
     col = math.floor((vim.o.columns - width - 2) / 2),
     style = "minimal",
     border = opts.border or "rounded",
-    focusable = false,
+    focusable = opts.focusable or false,
     noautocmd = true,
   })
   if not ok_win or not win then
@@ -60,6 +60,27 @@ function M.flash(lines, duration_ms, border)
   end
   vim.defer_fn(close, duration_ms)
   return close
+end
+
+--- Focusable centered float that stays open until dismissed with q/<Esc>.
+function M.open_panel(lines, opts)
+  opts = opts or {}
+  local buf, win = open_centered(lines, {
+    border = opts.border or "rounded",
+    focusable = true,
+    enter = true,
+  })
+  if not buf or not win then
+    return nil, nil
+  end
+  for _, key in ipairs({ "q", "<Esc>" }) do
+    vim.keymap.set("n", key, function()
+      if vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_close(win, true)
+      end
+    end, { buffer = buf, nowait = true, silent = true })
+  end
+  return buf, win
 end
 
 return M

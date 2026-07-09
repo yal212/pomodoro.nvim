@@ -171,4 +171,15 @@ describe("init state machine", function()
     assert.equals(25 * 60 * 1000, fake.ms)
     assert.equals(State.PHASE.WORK, State.current.phase)
   end)
+
+  it("history opens without error headless", function()
+    setup()
+    pomo.history(7)
+    -- close any float the panel opened so later tests keep a clean layout
+    for _, w in ipairs(vim.api.nvim_list_wins()) do
+      if vim.api.nvim_win_get_config(w).relative ~= "" then
+        vim.api.nvim_win_close(w, true)
+      end
+    end
+  end)
 end)

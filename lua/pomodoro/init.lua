@@ -238,6 +238,24 @@ function M.stats_summary()
   vim.notify(table.concat(lines, "\n"), vim.log.levels.INFO, { title = "Pomodoro" })
 end
 
+--- Show the last n days (default 14) in a dismissable float.
+function M.history(n)
+  n = tonumber(n) or 14
+  local rows = Stats.last_n_days(n)
+  local lines = { string.format(" Pomodoro — last %d days ", n), "" }
+  for _, row in ipairs(rows) do
+    local bar = string.rep("█", math.min(row.data.completed_work, 20))
+    lines[#lines + 1] = string.format(
+      " %s  %2d work  %4d min  %s ",
+      row.date,
+      row.data.completed_work,
+      row.data.minutes_focused,
+      bar
+    )
+  end
+  require("pomodoro.ui.float").open_panel(lines)
+end
+
 function M.reset_stats()
   Stats.reset()
   vim.notify("Pomodoro stats cleared", vim.log.levels.INFO, { title = "Pomodoro" })

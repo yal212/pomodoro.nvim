@@ -41,6 +41,13 @@ function M.register()
     pomodoro().status()
   end, { desc = "Toggle the pomodoro status window" })
 
+  user_cmd("PomodoroHistory", function(opts)
+    pomodoro().history(opts.args ~= "" and opts.args or nil)
+  end, {
+    nargs = "?",
+    desc = "Show past days' stats in a floating window",
+  })
+
   user_cmd("PomodoroStats", function()
     pomodoro().stats_summary()
   end, { desc = "Print today + last 7 days summary" })
