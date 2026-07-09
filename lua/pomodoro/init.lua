@@ -71,6 +71,10 @@ function M._on_phase_end(phase, ctx)
   ctx = ctx or {}
   local opts = Config.get()
 
+  if not ctx.skipped then
+    require("pomodoro.sound").play()
+  end
+
   if phase == State.PHASE.WORK then
     Focus.on_work_end()
     if not ctx.skipped then

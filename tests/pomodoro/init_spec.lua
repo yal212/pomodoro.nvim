@@ -11,6 +11,7 @@ describe("init state machine", function()
     "pomodoro.focus",
     "pomodoro.notify",
     "pomodoro.persistence",
+    "pomodoro.sound",
     "pomodoro.state",
     "pomodoro.stats",
     "pomodoro.statusline",

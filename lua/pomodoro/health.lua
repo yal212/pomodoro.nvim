@@ -36,6 +36,18 @@ function M.check()
     warn("data dir missing: " .. data_dir)
   end
 
+  local sound = require("pomodoro.config").get().sound
+  if sound and sound.enabled then
+    local cmd = require("pomodoro.sound")._resolve_cmd()
+    if not cmd then
+      warn("sound.enabled is set but no sound.cmd configured for this platform")
+    elseif vim.fn.executable(cmd[1]) == 1 then
+      ok("sound command found: " .. cmd[1])
+    else
+      warn("sound command not executable: " .. cmd[1])
+    end
+  end
+
   if pcall(require, "telescope") then
     ok("telescope.nvim found (optional picker available)")
   else

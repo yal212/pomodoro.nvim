@@ -14,6 +14,10 @@ M.defaults = {
   notify = {
     float_duration_ms = 4000,
   },
+  sound = {
+    enabled = false,
+    cmd = nil, -- string (run via sh -c) or argv table; nil = platform default
+  },
   statusline = {
     icon = "",
     show_when_idle = false,
@@ -96,6 +100,16 @@ local function validate(opts)
     check("daily_goal", opts.daily_goal, "number")
     if opts.daily_goal < 0 then
       error("pomodoro: daily_goal must be >= 0", 2)
+    end
+  end
+  if opts.sound then
+    check("sound", opts.sound, "table")
+    check("sound.enabled", opts.sound.enabled, "boolean", true)
+    if opts.sound.cmd ~= nil then
+      local t = type(opts.sound.cmd)
+      if t ~= "string" and t ~= "table" then
+        error("pomodoro: sound.cmd must be a string or a list of arguments", 2)
+      end
     end
   end
   if opts.notify_styles then
