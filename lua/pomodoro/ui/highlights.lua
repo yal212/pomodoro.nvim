@@ -11,6 +11,7 @@ function M.ensure_highlights()
     PomodoroProgress = "DiagnosticInfo",
     PomodoroProgressTrack = "NonText",
     PomodoroDim = "Comment",
+    PomodoroDimNC = "Comment",
     PomodoroTitle = "FloatTitle",
   }
   for name, link in pairs(groups) do

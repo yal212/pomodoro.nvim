@@ -7,6 +7,18 @@ read_globals = {
   "vim",
 }
 
+-- vim option/variable tables are legitimately assigned to
+globals = {
+  "vim.g",
+  "vim.b",
+  "vim.w",
+  "vim.o",
+  "vim.bo",
+  "vim.wo",
+  "vim.go",
+  "vim.env",
+}
+
 self = false
 
 ignore = {

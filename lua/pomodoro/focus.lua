@@ -5,7 +5,23 @@ local M = {}
 
 local augroup
 local saved_diagnostic_config
-local dimmed_wins = {}
+local dimmed_wins = {} -- win id -> saved winhighlight string
+local dimming = false
+
+-- NormalNC only applies to unfocused windows, so dimming every normal window
+-- makes the effect follow the cursor without per-focus bookkeeping.
+local function dim_win(w)
+  if dimmed_wins[w] ~= nil then
+    return
+  end
+  if vim.api.nvim_win_get_config(w).relative ~= "" then
+    return
+  end
+  local saved = vim.wo[w].winhighlight
+  dimmed_wins[w] = saved
+  local entry = "NormalNC:PomodoroDimNC"
+  vim.wo[w].winhighlight = saved ~= "" and (saved .. "," .. entry) or entry
+end
 
 local function blocked_set()
   local set = {}
@@ -61,6 +77,16 @@ function M.setup()
       end
     end,
   })
+
+  -- WinNew runs in the context of the new window
+  vim.api.nvim_create_autocmd("WinNew", {
+    group = augroup,
+    callback = function()
+      if dimming then
+        dim_win(vim.api.nvim_get_current_win())
+      end
+    end,
+  })
 end
 
 function M.on_work_start()
@@ -76,12 +102,10 @@ function M.on_work_start()
     })
   end
   if opts.focus.dim_inactive then
-    local cur = vim.api.nvim_get_current_win()
+    require("pomodoro.ui.highlights").ensure_highlights()
+    dimming = true
     for _, w in ipairs(vim.api.nvim_list_wins()) do
-      if w ~= cur then
-        dimmed_wins[w] = vim.wo[w].winblend or 0
-        vim.wo[w].winblend = 30
-      end
+      dim_win(w)
     end
   end
 end
@@ -91,12 +115,13 @@ function M.on_work_end()
     vim.diagnostic.config(saved_diagnostic_config)
     saved_diagnostic_config = nil
   end
-  for w, orig_blend in pairs(dimmed_wins) do
+  for w, saved in pairs(dimmed_wins) do
     if vim.api.nvim_win_is_valid(w) then
-      vim.wo[w].winblend = orig_blend
+      vim.wo[w].winhighlight = saved
     end
   end
   dimmed_wins = {}
+  dimming = false
 end
 
 M._check_command = check_command
