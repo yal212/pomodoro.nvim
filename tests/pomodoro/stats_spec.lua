@@ -35,7 +35,7 @@ describe("stats", function()
 
   it("last_n_days is oldest-first, ends today, and fills gaps", function()
     local today = os.date("%Y-%m-%d")
-    local two_ago = os.date("%Y-%m-%d", os.time() - 2 * 86400)
+    local two_ago = Stats._day_key(2)
     Stats._db = { version = 1, days = { [today] = day(2), [two_ago] = day(5) } }
     local rows = Stats.last_n_days(3)
     assert.equals(3, #rows)
@@ -46,9 +46,35 @@ describe("stats", function()
     assert.equals(2, rows[3].data.completed_work)
   end)
 
+  describe("_day_key", function()
+    local saved_tz
+
+    before_each(function()
+      saved_tz = vim.env.TZ
+    end)
+
+    after_each(function()
+      vim.env.TZ = saved_tz
+    end)
+
+    it("matches os.date for today", function()
+      assert.equals(os.date("%Y-%m-%d"), Stats._day_key(0))
+    end)
+
+    it("does not skip the spring-forward day", function()
+      vim.env.TZ = "America/New_York"
+      -- 2026-03-08 had 23 hours (EST→EDT); from just after midnight the day
+      -- after, naive now-86400 arithmetic lands on 03-07 and skips 03-08.
+      local now = os.time({ year = 2026, month = 3, day = 9, hour = 0, min = 30 })
+      assert.equals("2026-03-09", Stats._day_key(0, now))
+      assert.equals("2026-03-08", Stats._day_key(1, now))
+      assert.equals("2026-03-07", Stats._day_key(2, now))
+    end)
+  end)
+
   describe("streak", function()
     local function key(days_ago)
-      return os.date("%Y-%m-%d", os.time() - days_ago * 86400)
+      return Stats._day_key(days_ago)
     end
 
     it("is 0 for an empty db", function()

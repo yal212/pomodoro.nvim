@@ -5,8 +5,19 @@ local M = {}
 
 M._db = nil
 
+-- Calendar-day key for `days_ago` days before `now`. os.time() normalizes
+-- out-of-range fields, so the arithmetic is DST-safe — subtracting fixed
+-- 86400s chunks skips or repeats a date around DST transitions.
+local function day_key(days_ago, now)
+  local t = os.date("*t", now)
+  return os.date(
+    "%Y-%m-%d",
+    os.time({ year = t.year, month = t.month, day = t.day - days_ago, hour = 12 })
+  )
+end
+
 local function today_key()
-  return os.date("%Y-%m-%d")
+  return day_key(0)
 end
 
 local function ensure_day(db, key)
@@ -70,7 +81,7 @@ end
 function M.last_n_days(n)
   local out = {}
   for i = n - 1, 0, -1 do
-    local key = os.date("%Y-%m-%d", os.time() - i * 86400)
+    local key = day_key(i)
     out[#out + 1] = {
       date = key,
       data = M.db().days[key]
@@ -88,8 +99,7 @@ function M.streak(goal)
   local threshold = (goal and goal > 0) and goal or 1
   local db = M.db()
   local function meets(days_ago)
-    local key = os.date("%Y-%m-%d", os.time() - days_ago * 86400)
-    local d = db.days[key]
+    local d = db.days[day_key(days_ago)]
     return d ~= nil and d.completed_work >= threshold
   end
   local n = 0
@@ -109,5 +119,7 @@ function M.reset()
   M._db = Persistence.empty_db()
   M.save()
 end
+
+M._day_key = day_key
 
 return M
