@@ -11,7 +11,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Create GitHub release from CHANGELOG
         uses: taiki-e/create-gh-release-action@v1
