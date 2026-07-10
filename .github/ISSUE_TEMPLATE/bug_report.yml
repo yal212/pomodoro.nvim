@@ -1,0 +1,70 @@
+name: Bug report
+description: Something isn't working as expected
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+      placeholder: |
+        When I run `:Pomodoro start` and then ..., the status window ...
+        I expected ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps starting from a fresh Neovim session.
+      placeholder: |
+        1. `:Pomodoro start`
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Minimal configuration
+      description: The smallest config that reproduces the issue.
+      render: lua
+      value: |
+        {
+          "yal212/pomodoro.nvim",
+          opts = {
+            -- your settings here
+          },
+        }
+    validations:
+      required: true
+  - type: input
+    id: nvim-version
+    attributes:
+      label: Neovim version
+      description: Output of `nvim --version` (first line).
+      placeholder: NVIM v0.11.0
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Release tag or commit hash.
+      placeholder: v1.0.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.5 / Ubuntu 24.04 / Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: checkhealth
+    attributes:
+      label: "`:checkhealth pomodoro` output"
+      render: text
+    validations:
+      required: false

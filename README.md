@@ -452,12 +452,7 @@ require("pomodoro").setup({
 
 ## 🤝 Contributing
 
-Issues and PRs welcome. Please:
-
-1. Run the test suite and `stylua --check` before submitting
-2. Add a spec for any new behavior
-3. Keep runtime deps at zero — Telescope/notify integration must remain optional
-4. If a change alters the UI, re-record the demo: `vhs scripts/demo.tape` ([vhs](https://github.com/charmbracelet/vhs))
+Issues and PRs welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for dev setup, test commands, and guidelines.
 
 ## 🙏 Acknowledgements
 
