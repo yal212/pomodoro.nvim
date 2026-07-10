@@ -48,7 +48,7 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 - 🔭 **Optional Telescope picker** — last 30 days at a glance, only loaded if Telescope is present
 - 🪝 **Hooks** — `on_work_start`, `on_break_start`, `on_cycle_complete`, … wire your own behavior
 - 🪶 **Zero required dependencies** — pure Lua, stdlib only
-- ✅ **Tested** — 72 plenary-busted specs, CI on stable + nightly Neovim
+- ✅ **Tested** — 80 plenary-busted specs, CI on stable + nightly Neovim
 
 ## 📦 Requirements
 
@@ -131,7 +131,7 @@ map("n", "<leader>pS", "<cmd>Pomodoro stats<cr>",  { desc = "Pomodoro: stats" })
 
 ## ⚙️ Configuration
 
-`setup()` is **not** required — defaults work out of the box. Pass any subset of the table below to override.
+`setup()` is **not** required — `:Pomodoro` initializes itself with defaults on first use. Pass any subset of the table below to override.
 
 <details>
 <summary><b>Click to view all defaults</b></summary>
@@ -188,6 +188,8 @@ require("pomodoro").setup({
     refresh_ms         = 250,
     show_progress_bar  = true,
     show_today         = true,
+    title              = nil,      -- optional float title, e.g. " pomodoro "
+    title_pos          = "center", -- "left" | "center" | "right"
     icons = {
       work        = "▶",
       short_break = "•",
@@ -412,6 +414,41 @@ vim.api.nvim_set_hl(0, "PomodoroWork", { fg = "#ff9e64", bold = true })
 ```
 
 Reports Neovim version, data-dir writability, sound-command availability (when enabled), and which optional integrations are available.
+
+## ❓ FAQ
+
+<details>
+<summary><b>Does a running timer survive restarting Neovim?</b></summary>
+
+No — only daily stats are persisted. Quitting Neovim mid-phase discards the running timer; the next launch starts idle, with your stats intact.
+
+</details>
+
+<details>
+<summary><b>What happens when my laptop sleeps?</b></summary>
+
+Timers are driven by libuv, which stalls while the system is suspended, so a phase is effectively extended by however long the machine slept. Treat a work block as "time Neovim was actually awake".
+
+</details>
+
+<details>
+<summary><b>Can I run multiple Neovim instances at once?</b></summary>
+
+Yes. They share one stats file, and every save is atomic (temp file + rename), so nothing corrupts — but each instance keeps its own in-memory copy loaded at startup, so the last instance to complete a work block wins; same-day counts from parallel instances aren't merged.
+
+</details>
+
+<details>
+<summary><b>How do I turn persistence off, or move the stats file?</b></summary>
+
+```lua
+require("pomodoro").setup({
+  persistence = { enabled = false },  -- keep stats in memory only
+  -- or: persistence = { path = vim.fn.expand("~/notes/pomodoro.json") },
+})
+```
+
+</details>
 
 ## 🤝 Contributing
 
