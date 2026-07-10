@@ -1,5 +1,86 @@
 local M = {}
 
+--- @class pomodoro.DurationsConfig
+--- @field work? number work block length in minutes (default 25)
+--- @field short_break? number short break length in minutes (default 5)
+--- @field long_break? number long break length in minutes (default 15)
+
+--- @class pomodoro.NotifyConfig
+--- @field float_duration_ms? number how long the floating toast stays up (default 4000)
+
+--- @class pomodoro.SoundConfig
+--- @field enabled? boolean play a sound on natural phase end (default false)
+--- @field cmd? string|string[] command string (run via `sh -c`) or argv table;
+---   nil uses `afplay` with a system sound on macOS
+
+--- @class pomodoro.StatuslineConfig
+--- @field icon? string prefix icon (default "")
+--- @field show_when_idle? boolean render the component while idle (default false)
+--- @field format? string `string.format` pattern receiving icon, body (default "%s %s")
+--- @field refresh_ms? number statusline redraw interval while running (default 250)
+--- @field condition? fun(ctx: { phase: string, remaining_ms: number }): boolean
+---   return false to hide the component
+
+--- @class pomodoro.StatusWindowIcons
+--- @field work? string
+--- @field short_break? string
+--- @field long_break? string
+--- @field paused? string
+--- @field idle? string
+
+--- @class pomodoro.StatusWindowConfig
+--- @field border? string|string[] window border (default "none")
+--- @field width? number (default 36)
+--- @field height? number (default 5)
+--- @field anchor? string float anchor corner (default "NE")
+--- @field row? number (default 1)
+--- @field col_offset? number columns from the right edge (default 2)
+--- @field refresh_ms? number redraw interval (default 250)
+--- @field show_progress_bar? boolean (default true)
+--- @field show_today? boolean show today's completed count (default true)
+--- @field title? string optional float title (default nil)
+--- @field title_pos? "left"|"center"|"right" title position when title is set (default "center")
+--- @field icons? pomodoro.StatusWindowIcons
+
+--- @class pomodoro.FocusConfig
+--- @field enabled? boolean (default false)
+--- @field blocked_commands? string[] Ex commands to block during work, e.g. { "Lazy" }
+--- @field silent_diagnostics? boolean hide diagnostic virtual_text during work (default false)
+--- @field dim_inactive? boolean dim non-current windows during work (default false)
+
+--- @class pomodoro.PersistenceConfig
+--- @field enabled? boolean persist per-day stats as JSON (default true)
+--- @field path? string stats file location; nil = stdpath("data")/pomodoro/stats.json
+
+--- @class pomodoro.HookPayload
+--- @field duration_min? number
+--- @field kind? "short"|"long"
+--- @field cycle_index? number
+
+--- @class pomodoro.HooksConfig
+--- @field on_work_start? fun(payload: pomodoro.HookPayload)
+--- @field on_work_end? fun(payload: pomodoro.HookPayload)
+--- @field on_break_start? fun(payload: pomodoro.HookPayload)
+--- @field on_break_end? fun(payload: pomodoro.HookPayload)
+--- @field on_cycle_complete? fun(payload: pomodoro.HookPayload)
+
+--- @class pomodoro.Config
+--- @field durations? pomodoro.DurationsConfig phase lengths in minutes
+--- @field cycles_per_long_break? number long break every Nth work block (default 4)
+--- @field daily_goal? number target work blocks per day, 0 = disabled (default 0)
+--- @field auto_start_break? boolean break begins as soon as work ends (default true)
+--- @field auto_start_work? boolean next work block begins as soon as a break ends (default false)
+--- @field notify_styles? ("vim_notify"|"float")[] notification channels, in display order
+--- @field notify? pomodoro.NotifyConfig
+--- @field sound? pomodoro.SoundConfig
+--- @field statusline? pomodoro.StatuslineConfig
+--- @field status_window? pomodoro.StatusWindowConfig
+--- @field focus? pomodoro.FocusConfig
+--- @field persistence? pomodoro.PersistenceConfig
+--- @field hooks? pomodoro.HooksConfig
+
+-- Deliberately not annotated as pomodoro.Config: the literal's inferred
+-- (fully-present) type is what internal code should see after merging.
 M.defaults = {
   durations = {
     work = 25,
@@ -35,6 +116,8 @@ M.defaults = {
     refresh_ms = 250,
     show_progress_bar = true,
     show_today = true,
+    title = nil, -- optional float title, e.g. " pomodoro "
+    title_pos = "center",
     icons = {
       work = "▶",
       short_break = "•",
@@ -134,6 +217,7 @@ local function validate(opts)
   end
 end
 
+--- @param user_opts? pomodoro.Config
 function M.merge(user_opts)
   validate(user_opts)
   M.options = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), user_opts or {})

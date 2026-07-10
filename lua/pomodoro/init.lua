@@ -128,8 +128,10 @@ local function next_phase_from_idle()
   return State.PHASE.WORK
 end
 
---- @param arg string|number|table|nil "work"/"short"/"long", a minute count
----   for a one-off work block, or { minutes = n }
+--- Start a phase. With no argument, starts the next phase in the cycle
+--- (or resumes if paused).
+--- @param arg? "work"|"short"|"long"|number|{ minutes: number } phase name,
+---   or a minute count for a one-off work block
 function M.start(arg)
   local override_min
   if type(arg) == "table" then
@@ -165,6 +167,7 @@ function M.start(arg)
   start_phase(target, override_min)
 end
 
+--- Pause the active phase, preserving remaining time.
 function M.pause()
   if State.pause() then
     Timer.stop()
@@ -172,6 +175,7 @@ function M.pause()
   end
 end
 
+--- Resume a paused phase.
 function M.resume()
   local ok, prev_phase, remaining = State.resume()
   if not ok then
@@ -188,6 +192,7 @@ function M.resume()
   Notify.send("Resumed")
 end
 
+--- Stop the timer and reset to idle.
 function M.stop()
   Timer.stop()
   Focus.on_work_end()
@@ -195,6 +200,8 @@ function M.stop()
   Notify.send("Stopped")
 end
 
+--- End the current phase immediately and advance to the next. Skipped
+--- phases record no stats and fire no completion hooks.
 function M.skip()
   if not State.is_running() then
     Notify.send("Nothing to skip", "warn")
@@ -205,6 +212,7 @@ function M.skip()
   M._on_phase_end(phase, { skipped = true })
 end
 
+--- Restart the current phase from the beginning.
 function M.restart()
   if not State.is_running() then
     Notify.send("Nothing to restart", "warn")
@@ -216,10 +224,12 @@ function M.restart()
   start_phase(phase, override_min)
 end
 
+--- Toggle the pinned floating status window.
 function M.status()
   require("pomodoro.ui.status").toggle()
 end
 
+--- Print today + last-7-days summary and the current streak via vim.notify.
 function M.stats_summary()
   local today = Stats.today()
   local week = Stats.last_n_days(7)
@@ -244,6 +254,7 @@ function M.stats_summary()
 end
 
 --- Show the last n days (default 14) in a dismissable float.
+--- @param n? number|string
 function M.history(n)
   n = tonumber(n) or 14
   local rows = Stats.last_n_days(n)
@@ -263,11 +274,14 @@ function M.history(n)
   require("pomodoro.ui.float").open_panel(lines)
 end
 
+--- Wipe all persisted stats.
 function M.reset_stats()
   Stats.reset()
   vim.notify("Pomodoro stats cleared", vim.log.levels.INFO, { title = "Pomodoro" })
 end
 
+--- Statusline component for a plain 'statusline' expression.
+--- @return string
 function M.statusline()
   return require("pomodoro.statusline").component()
 end
@@ -284,6 +298,9 @@ end
 
 local did_setup = false
 
+--- Merge user config and initialize. Idempotent; optional — the plugin
+--- initializes itself with defaults on first :Pomodoro use.
+--- @param user_opts? pomodoro.Config
 function M.setup(user_opts)
   Config.merge(user_opts)
   Stats.load()
