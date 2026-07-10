@@ -59,6 +59,18 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/):
    ([vhs](https://github.com/charmbracelet/vhs))
 5. **Add a `CHANGELOG.md` entry** under `[Unreleased]` for user-facing changes
 
+## Releasing (maintainers)
+
+Releases are cut from tags — the `release` workflow publishes a GitHub release
+using the matching `CHANGELOG.md` section as the body:
+
+1. Move the `[Unreleased]` notes into a new `## [X.Y.Z] - YYYY-MM-DD` section
+   and update the link footer; merge that via PR
+2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`
+
+The workflow fails if `CHANGELOG.md` has no section for the tag, and marks
+tags containing `-` (e.g. `v1.1.0-rc.1`) as prereleases.
+
 ## Reporting bugs
 
 Please use the bug report issue template — it asks for `nvim --version`, a
