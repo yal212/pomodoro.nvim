@@ -71,6 +71,11 @@ local function usage()
 end
 
 local function dispatch(opts)
+  -- :Pomodoro is registered from plugin/pomodoro.lua, so it can run before
+  -- setup(); initialize with defaults on first use in that case.
+  if not pomodoro()._is_setup() then
+    pomodoro().setup({})
+  end
   local name = (opts.fargs[1] or ""):lower()
   local sub = subcommands[name]
   if not sub then

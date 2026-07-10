@@ -7,7 +7,11 @@ describe("commands", function()
     notes = {}
     -- commands.lua requires these lazily at dispatch time, so stubbing
     -- package.loaded intercepts every subcommand handler
-    package.loaded["pomodoro"] = setmetatable({}, {
+    package.loaded["pomodoro"] = setmetatable({
+      _is_setup = function()
+        return true
+      end,
+    }, {
       __index = function(_, key)
         return function(arg)
           calls[#calls + 1] = { name = key, arg = arg }
@@ -63,6 +67,35 @@ describe("commands", function()
     assert.same({ "work", "short", "long" }, vim.fn.getcompletion("Pomodoro start ", "cmdline"))
     assert.same({ "work" }, vim.fn.getcompletion("Pomodoro Start w", "cmdline"))
     assert.same({}, vim.fn.getcompletion("Pomodoro stop ", "cmdline"))
+  end)
+
+  it("is registered by plugin/pomodoro.lua without setup()", function()
+    pcall(vim.api.nvim_del_user_command, "Pomodoro")
+    vim.g.loaded_pomodoro = nil
+    vim.cmd("runtime plugin/pomodoro.lua")
+    assert.equals(2, vim.fn.exists(":Pomodoro"))
+  end)
+
+  it("auto-initializes with defaults when dispatched before setup()", function()
+    local setup_opts
+    package.loaded["pomodoro"] = setmetatable({
+      _is_setup = function()
+        return setup_opts ~= nil
+      end,
+      setup = function(opts)
+        setup_opts = opts
+      end,
+    }, {
+      __index = function(_, key)
+        return function(arg)
+          calls[#calls + 1] = { name = key, arg = arg }
+        end
+      end,
+    })
+    vim.cmd("Pomodoro start")
+    vim.cmd("Pomodoro stop")
+    assert.same({}, setup_opts)
+    assert.same({ { name = "start" }, { name = "stop" } }, calls)
   end)
 
   it("does not define the old per-action commands", function()
