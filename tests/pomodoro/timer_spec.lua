@@ -42,6 +42,43 @@ describe("timer", function()
     assert.is_false(Timer.is_running())
   end)
 
+  -- The expiry callback is queued via vim.schedule, so fast-only waits
+  -- (fourth vim.wait arg) let the uv timer fire while keeping the queued
+  -- expiry pending — the window where stop()/start() can race it.
+
+  it("a stale queued expiry does not cancel a replacement timer", function()
+    local stale, fresh = false, false
+    Timer.start(5, function()
+      stale = true
+    end)
+    vim.wait(50, function()
+      return false
+    end, 5, true)
+    Timer.start(30, function()
+      fresh = true
+    end)
+    vim.wait(300, function()
+      return fresh
+    end, 5)
+    assert.is_true(fresh)
+    assert.is_false(stale)
+  end)
+
+  it("stop after expiry has queued suppresses the stale callback", function()
+    local fired = false
+    Timer.start(5, function()
+      fired = true
+    end)
+    vim.wait(50, function()
+      return false
+    end, 5, true)
+    Timer.stop()
+    vim.wait(50, function()
+      return false
+    end, 10)
+    assert.is_false(fired)
+  end)
+
   it("starting again replaces previous timer", function()
     local first, second = false, false
     Timer.start(40, function()

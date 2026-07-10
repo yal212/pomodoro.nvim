@@ -18,10 +18,17 @@ function M.start(duration_ms, on_expire)
     vim.notify("pomodoro: failed to create timer", vim.log.levels.ERROR, { title = "Pomodoro" })
     return false
   end
+  local this = handle
   handle:start(
     duration_ms,
     0,
     vim.schedule_wrap(function()
+      -- The expiry is queued on the main loop, so stop()/start() may have
+      -- replaced the handle in the meantime; a stale expiry must neither
+      -- close the new timer nor end a phase that already ended.
+      if handle ~= this then
+        return
+      end
       close()
       if on_expire then
         on_expire()
