@@ -10,7 +10,7 @@ local NS = vim.api.nvim_create_namespace("pomodoro_status")
 local FILL = "█"
 local TRACK = "░"
 
-local win, buf, refresh_handle
+local win, buf, refresh_handle, resize_group
 
 local function close_refresh()
   if refresh_handle and not refresh_handle:is_closing() then
@@ -179,8 +179,25 @@ function M.is_open()
   return win ~= nil and vim.api.nvim_win_is_valid(win)
 end
 
+local function reposition()
+  if not M.is_open() then
+    return
+  end
+  local opts = Config.get().status_window
+  vim.api.nvim_win_set_config(win, {
+    relative = "editor",
+    anchor = opts.anchor,
+    row = opts.row,
+    col = vim.o.columns - opts.col_offset,
+  })
+end
+
 function M.close()
   close_refresh()
+  if resize_group then
+    pcall(vim.api.nvim_del_augroup_by_id, resize_group)
+    resize_group = nil
+  end
   if win and vim.api.nvim_win_is_valid(win) then
     vim.api.nvim_win_close(win, true)
   end
@@ -218,6 +235,12 @@ function M.open()
   win = vim.api.nvim_open_win(buf, false, win_opts)
   vim.wo[win].winhighlight = "Normal:Normal,FloatBorder:FloatBorder,FloatTitle:PomodoroTitle"
   render()
+
+  resize_group = vim.api.nvim_create_augroup("PomodoroStatusResize", { clear = true })
+  vim.api.nvim_create_autocmd("VimResized", {
+    group = resize_group,
+    callback = reposition,
+  })
 
   close_refresh()
   refresh_handle = vim.uv.new_timer()

@@ -4,8 +4,10 @@ local function open_centered(lines, opts)
   local height = #lines
   local width = 0
   for _, l in ipairs(lines) do
-    if #l > width then
-      width = #l
+    -- display cells, not bytes: history bars are multibyte
+    local w = vim.api.nvim_strwidth(l)
+    if w > width then
+      width = w
     end
   end
   width = math.max(width, 20)
