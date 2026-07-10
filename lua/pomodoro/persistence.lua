@@ -70,12 +70,13 @@ function M.load()
   end
   local ok, decoded = pcall(vim.json.decode, data)
   if not ok or type(decoded) ~= "table" then
+    local kept = vim.uv.fs_rename(path, path .. ".bak") ~= nil
     vim.notify(
-      "pomodoro: stats.json corrupt, starting fresh (kept at " .. path .. ".bak)",
+      "pomodoro: stats.json corrupt, starting fresh"
+        .. (kept and " (kept at " .. path .. ".bak)" or ""),
       vim.log.levels.WARN,
       { title = "Pomodoro" }
     )
-    pcall(vim.uv.fs_rename, path, path .. ".bak")
     return M.empty_db()
   end
   if type(decoded.days) ~= "table" then

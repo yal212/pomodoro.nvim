@@ -29,11 +29,25 @@ function M.check()
     warn("setup() not called yet — call require('pomodoro').setup()")
   end
 
-  local data_dir = vim.fn.stdpath("data")
-  if vim.fn.isdirectory(data_dir) == 1 then
-    ok("data dir writable: " .. data_dir)
+  if require("pomodoro.config").get().persistence.enabled then
+    -- the stats dir is created on first save, so fall back to the nearest
+    -- existing ancestor when judging writability
+    local dir = vim.fs.dirname(require("pomodoro.persistence").path())
+    local probe = dir
+    while probe and vim.fn.isdirectory(probe) == 0 do
+      local parent = vim.fs.dirname(probe)
+      if parent == probe then
+        break
+      end
+      probe = parent
+    end
+    if probe and vim.uv.fs_access(probe, "W") then
+      ok("stats dir writable: " .. dir)
+    else
+      warn("stats dir not writable: " .. dir)
+    end
   else
-    warn("data dir missing: " .. data_dir)
+    ok("persistence disabled — stats are kept in memory only")
   end
 
   local sound = require("pomodoro.config").get().sound
