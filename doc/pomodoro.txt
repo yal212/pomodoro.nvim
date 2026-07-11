@@ -48,6 +48,11 @@ defaults on first use. Call it only to override configuration.
 ==============================================================================
 3. CONFIGURATION                                            *pomodoro-config*
 
+Options are validated at `setup()` (|pomodoro-setup|): an invalid value (say
+`status_window.anchor = "TOP"`, or a non-numeric width) raises a clear
+`pomodoro:`-prefixed error immediately instead of surfacing later as a raw
+runtime error.
+
 Defaults: >lua
   require("pomodoro").setup({
     durations = { work = 25, short_break = 5, long_break = 15 }, -- minutes

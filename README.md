@@ -177,7 +177,7 @@ Plain `<cmd>Pomodoro start<cr>` mappings work just as well if you prefer them.
 
 ## ⚙️ Configuration
 
-`setup()` is **not** required — `:Pomodoro` initializes itself with defaults on first use. Pass any subset of the table below to override.
+`setup()` is **not** required — `:Pomodoro` initializes itself with defaults on first use. Pass any subset of the table below to override. Options are validated: an invalid value (say `status_window.anchor = "TOP"`, or a non-numeric width) makes `setup()` fail immediately with a clear `pomodoro:`-prefixed error instead of surfacing later as a raw runtime error.
 
 <details>
 <summary><b>Click to view all defaults</b></summary>
