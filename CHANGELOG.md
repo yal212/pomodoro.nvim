@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `setup()` now validates `status_window`, `statusline`, `notify`,
   `persistence`, and `focus` options with clear error messages instead of
   failing later with raw runtime errors
+- Test coverage for the statusline component, status window rendering
+  (progress bar and daily-goal math), notifications, and `<Plug>` mappings
+  (~40 new specs)
 
 ### Fixed
 

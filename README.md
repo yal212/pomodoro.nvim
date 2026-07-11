@@ -49,7 +49,7 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 - 🔭 **Optional Telescope picker** — last 30 days at a glance, only loaded if Telescope is present
 - 🪝 **Hooks** — `on_work_start`, `on_break_start`, `on_cycle_complete`, … wire your own behavior
 - 🪶 **Zero required dependencies** — pure Lua, stdlib only
-- ✅ **Tested** — 80 plenary-busted specs, CI on stable + nightly Neovim
+- ✅ **Tested** — 100+ plenary-busted specs, CI on stable + nightly Neovim
 
 ## 🎯 Focus mode
 
