@@ -203,6 +203,13 @@ local function validate(opts)
       end
     end
   end
+  if opts.notify then
+    check("notify", opts.notify, "table")
+    check("notify.float_duration_ms", opts.notify.float_duration_ms, "number", true)
+    if opts.notify.float_duration_ms ~= nil and opts.notify.float_duration_ms <= 0 then
+      error("pomodoro: notify.float_duration_ms must be > 0", 2)
+    end
+  end
   if opts.hooks then
     for name, fn in pairs(opts.hooks) do
       if fn ~= nil and type(fn) ~= "function" then
@@ -210,9 +217,98 @@ local function validate(opts)
       end
     end
   end
-  if opts.statusline and opts.statusline.condition ~= nil then
-    if type(opts.statusline.condition) ~= "function" then
+  if opts.statusline then
+    check("statusline", opts.statusline, "table")
+    check("statusline.icon", opts.statusline.icon, "string", true)
+    check("statusline.show_when_idle", opts.statusline.show_when_idle, "boolean", true)
+    check("statusline.format", opts.statusline.format, "string", true)
+    if opts.statusline.format ~= nil then
+      -- Rendered as string.format(format, icon, body); reject patterns like
+      -- "%d" that would error with string arguments at render time.
+      if not pcall(string.format, opts.statusline.format, "", "") then
+        error(
+          'pomodoro: statusline.format must be a string.format pattern accepting two strings (e.g. "%s %s")',
+          2
+        )
+      end
+    end
+    check("statusline.refresh_ms", opts.statusline.refresh_ms, "number", true)
+    if opts.statusline.refresh_ms ~= nil and opts.statusline.refresh_ms < 0 then
+      error("pomodoro: statusline.refresh_ms must be >= 0", 2)
+    end
+    if opts.statusline.condition ~= nil and type(opts.statusline.condition) ~= "function" then
       error("pomodoro: statusline.condition must be a function", 2)
+    end
+  end
+  if opts.status_window then
+    local sw = opts.status_window
+    check("status_window", sw, "table")
+    check("status_window.width", sw.width, "number", true)
+    check("status_window.height", sw.height, "number", true)
+    for _, dim in ipairs({ "width", "height" }) do
+      if sw[dim] ~= nil and sw[dim] < 1 then
+        error(("pomodoro: status_window.%s must be >= 1"):format(dim), 2)
+      end
+    end
+    check("status_window.row", sw.row, "number", true)
+    check("status_window.col_offset", sw.col_offset, "number", true)
+    for _, off in ipairs({ "row", "col_offset" }) do
+      if sw[off] ~= nil and sw[off] < 0 then
+        error(("pomodoro: status_window.%s must be >= 0"):format(off), 2)
+      end
+    end
+    check("status_window.refresh_ms", sw.refresh_ms, "number", true)
+    if sw.refresh_ms ~= nil and sw.refresh_ms <= 0 then
+      error("pomodoro: status_window.refresh_ms must be > 0", 2)
+    end
+    if sw.border ~= nil then
+      local t = type(sw.border)
+      if t ~= "string" and t ~= "table" then
+        error("pomodoro: status_window.border must be a string or a table", 2)
+      end
+    end
+    if sw.anchor ~= nil and not vim.tbl_contains({ "NW", "NE", "SW", "SE" }, sw.anchor) then
+      error(("pomodoro: unknown anchor %q (use NW, NE, SW, or SE)"):format(tostring(sw.anchor)), 2)
+    end
+    check("status_window.show_progress_bar", sw.show_progress_bar, "boolean", true)
+    check("status_window.show_today", sw.show_today, "boolean", true)
+    check("status_window.title", sw.title, "string", true)
+    if
+      sw.title_pos ~= nil and not vim.tbl_contains({ "left", "center", "right" }, sw.title_pos)
+    then
+      error(
+        ("pomodoro: unknown title_pos %q (use left, center, or right)"):format(
+          tostring(sw.title_pos)
+        ),
+        2
+      )
+    end
+    check("status_window.icons", sw.icons, "table", true)
+    if sw.icons then
+      for k, v in pairs(sw.icons) do
+        if type(v) ~= "string" then
+          error(("pomodoro: status_window.icons.%s must be a string"):format(tostring(k)), 2)
+        end
+      end
+    end
+  end
+  if opts.persistence then
+    check("persistence", opts.persistence, "table")
+    check("persistence.enabled", opts.persistence.enabled, "boolean", true)
+    check("persistence.path", opts.persistence.path, "string", true)
+  end
+  if opts.focus then
+    check("focus", opts.focus, "table")
+    check("focus.enabled", opts.focus.enabled, "boolean", true)
+    check("focus.silent_diagnostics", opts.focus.silent_diagnostics, "boolean", true)
+    check("focus.dim_inactive", opts.focus.dim_inactive, "boolean", true)
+    check("focus.blocked_commands", opts.focus.blocked_commands, "table", true)
+    if opts.focus.blocked_commands then
+      for i, cmd in ipairs(opts.focus.blocked_commands) do
+        if type(cmd) ~= "string" then
+          error(("pomodoro: focus.blocked_commands[%d] must be a string"):format(i), 2)
+        end
+      end
     end
   end
 end

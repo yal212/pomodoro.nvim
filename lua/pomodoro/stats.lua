@@ -5,6 +5,11 @@ local M = {}
 
 M._db = nil
 
+-- Increments not yet persisted, keyed like `_db.days`. Saves re-read the file
+-- and apply these on top, so concurrent Neovim instances don't clobber each
+-- other's same-day counts.
+M._pending = {}
+
 -- Calendar-day key for `days_ago` days before `now`. os.time() normalizes
 -- out-of-range fields, so the arithmetic is DST-safe — subtracting fixed
 -- 86400s chunks skips or repeats a date around DST transitions.
@@ -30,8 +35,19 @@ local function ensure_day(db, key)
   return db.days[key]
 end
 
+local function bump(key, field, amount)
+  M._pending[key] = M._pending[key]
+    or {
+      completed_work = 0,
+      completed_long_breaks = 0,
+      minutes_focused = 0,
+    }
+  M._pending[key][field] = M._pending[key][field] + amount
+end
+
 function M.load()
   M._db = Persistence.load()
+  M._pending = {}
   return M._db
 end
 
@@ -42,16 +58,34 @@ function M.db()
   return M._db
 end
 
+local function notify_save_failed(err)
+  vim.notify(
+    "pomodoro: failed to save stats: " .. (err or "unknown error"),
+    vim.log.levels.WARN,
+    { title = "Pomodoro" }
+  )
+end
+
 function M.save()
-  if M._db then
-    local ok, err = Persistence.save(M._db)
-    if not ok then
-      vim.notify(
-        "pomodoro: failed to save stats: " .. (err or "unknown error"),
-        vim.log.levels.WARN,
-        { title = "Pomodoro" }
-      )
-    end
+  if not M._db or not Config.get().persistence.enabled then
+    return
+  end
+  -- Read-merge-write: re-read the file and apply only our pending deltas on
+  -- top, so another instance's same-day counts survive this save.
+  local merged = Persistence.load()
+  for key, delta in pairs(M._pending) do
+    local day = ensure_day(merged, key)
+    day.completed_work = day.completed_work + delta.completed_work
+    day.completed_long_breaks = day.completed_long_breaks + delta.completed_long_breaks
+    day.minutes_focused = day.minutes_focused + delta.minutes_focused
+  end
+  local ok, err = Persistence.save(merged)
+  if ok then
+    M._db = merged
+    M._pending = {}
+  else
+    -- Deltas stay pending and retry on the next save.
+    notify_save_failed(err)
   end
 end
 
@@ -59,16 +93,22 @@ end
 ---   work duration
 function M.record_work_complete(minutes)
   local db = M.db()
-  local day = ensure_day(db, today_key())
+  local key = today_key()
+  local day = ensure_day(db, key)
+  local focused = minutes or Config.get().durations.work
   day.completed_work = day.completed_work + 1
-  day.minutes_focused = day.minutes_focused + (minutes or Config.get().durations.work)
+  day.minutes_focused = day.minutes_focused + focused
+  bump(key, "completed_work", 1)
+  bump(key, "minutes_focused", focused)
   M.save()
 end
 
 function M.record_long_break_complete()
   local db = M.db()
-  local day = ensure_day(db, today_key())
+  local key = today_key()
+  local day = ensure_day(db, key)
   day.completed_long_breaks = day.completed_long_breaks + 1
+  bump(key, "completed_long_breaks", 1)
   M.save()
 end
 
@@ -116,8 +156,14 @@ function M.streak(goal)
 end
 
 function M.reset()
+  -- Overwrite rather than merge: a merge would re-read the file and
+  -- resurrect the data the user just wiped.
   M._db = Persistence.empty_db()
-  M.save()
+  M._pending = {}
+  local ok, err = Persistence.save(M._db)
+  if not ok then
+    notify_save_failed(err)
+  end
 end
 
 M._day_key = day_key

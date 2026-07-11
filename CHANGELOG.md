@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `<Plug>` mappings for every action — `<Plug>(PomodoroStart)`,
+  `(PomodoroPause)`, `(PomodoroResume)`, `(PomodoroStop)`, `(PomodoroSkip)`,
+  `(PomodoroRestart)`, `(PomodoroStatus)`, `(PomodoroStats)`,
+  `(PomodoroHistory)` — available without calling `setup()`
+- `setup()` now validates `status_window`, `statusline`, `notify`,
+  `persistence`, and `focus` options with clear error messages instead of
+  failing later with raw runtime errors
+- Test coverage for the statusline component, status window rendering
+  (progress bar and daily-goal math), notifications, and `<Plug>` mappings
+  (~40 new specs)
+
+### Fixed
+
+- Concurrent Neovim instances no longer overwrite each other's stats: saves
+  re-read `stats.json` and merge this instance's per-day deltas on top
+
 ## [1.0.0] - 2026-07-10
 
 First stable release. 🍅

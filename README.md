@@ -49,7 +49,7 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 - 🔭 **Optional Telescope picker** — last 30 days at a glance, only loaded if Telescope is present
 - 🪝 **Hooks** — `on_work_start`, `on_break_start`, `on_cycle_complete`, … wire your own behavior
 - 🪶 **Zero required dependencies** — pure Lua, stdlib only
-- ✅ **Tested** — 80 plenary-busted specs, CI on stable + nightly Neovim
+- ✅ **Tested** — 100+ plenary-busted specs, CI on stable + nightly Neovim
 
 ## 🎯 Focus mode
 
@@ -149,17 +149,31 @@ lua require("pomodoro").setup({})
 
 Subcommands are case-insensitive — `:Pomodoro Start` works too — and `<Tab>` completes them.
 
-Suggested keymaps:
+No keys are bound by default. Every action ships a `<Plug>` mapping — `<Plug>(PomodoroStart)`, `(PomodoroPause)`, `(PomodoroResume)`, `(PomodoroStop)`, `(PomodoroSkip)`, `(PomodoroRestart)`, `(PomodoroStatus)`, `(PomodoroStats)`, `(PomodoroHistory)` — so suggested keymaps look like:
 
 ```lua
 local map = vim.keymap.set
-map("n", "<leader>ps", "<cmd>Pomodoro start<cr>",  { desc = "Pomodoro: start" })
-map("n", "<leader>pp", "<cmd>Pomodoro pause<cr>",  { desc = "Pomodoro: pause" })
-map("n", "<leader>pr", "<cmd>Pomodoro resume<cr>", { desc = "Pomodoro: resume" })
-map("n", "<leader>px", "<cmd>Pomodoro stop<cr>",   { desc = "Pomodoro: stop" })
-map("n", "<leader>pw", "<cmd>Pomodoro status<cr>", { desc = "Pomodoro: window" })
-map("n", "<leader>pS", "<cmd>Pomodoro stats<cr>",  { desc = "Pomodoro: stats" })
+map("n", "<leader>ps", "<Plug>(PomodoroStart)",  { desc = "Pomodoro: start" })
+map("n", "<leader>pp", "<Plug>(PomodoroPause)",  { desc = "Pomodoro: pause" })
+map("n", "<leader>pr", "<Plug>(PomodoroResume)", { desc = "Pomodoro: resume" })
+map("n", "<leader>px", "<Plug>(PomodoroStop)",   { desc = "Pomodoro: stop" })
+map("n", "<leader>pw", "<Plug>(PomodoroStatus)", { desc = "Pomodoro: window" })
+map("n", "<leader>pS", "<Plug>(PomodoroStats)",  { desc = "Pomodoro: stats" })
 ```
+
+With lazy.nvim, putting them in `keys` also lazy-loads the plugin on first press:
+
+```lua
+{
+  "yal212/pomodoro.nvim",
+  keys = {
+    { "<leader>ps", "<Plug>(PomodoroStart)",  desc = "Pomodoro: start" },
+    { "<leader>pw", "<Plug>(PomodoroStatus)", desc = "Pomodoro: window" },
+  },
+}
+```
+
+Plain `<cmd>Pomodoro start<cr>` mappings work just as well if you prefer them.
 
 ## ⚙️ Configuration
 
@@ -466,7 +480,7 @@ Timers are driven by libuv, which stalls while the system is suspended, so a pha
 <details>
 <summary><b>Can I run multiple Neovim instances at once?</b></summary>
 
-Yes. They share one stats file, and every save is atomic (temp file + rename), so nothing corrupts — but each instance keeps its own in-memory copy loaded at startup, so the last instance to complete a work block wins; same-day counts from parallel instances aren't merged.
+Yes. They share one stats file, and every save is atomic (temp file + rename), so nothing corrupts. Each save also re-reads the file and merges that instance's new counts on top, so same-day counts from parallel instances add up — completing blocks in two Neovims at once records all of them.
 
 </details>
 

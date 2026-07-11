@@ -277,4 +277,6 @@ function M.refresh()
   render()
 end
 
+M._build = build
+
 return M
