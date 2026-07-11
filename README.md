@@ -13,6 +13,7 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 [![Stars](https://img.shields.io/github/stars/yal212/pomodoro.nvim?style=flat-square&color=gold)](https://github.com/yal212/pomodoro.nvim/stargazers)
 
 [Features](#-features) ·
+[Focus mode](#-focus-mode) ·
 [Install](#-installation) ·
 [Quickstart](#-quickstart) ·
 [Config](#-configuration) ·
@@ -49,6 +50,37 @@ _Work / break cycles, editor-native notifications, per-day stats, an opt-in focu
 - 🪝 **Hooks** — `on_work_start`, `on_break_start`, `on_cycle_complete`, … wire your own behavior
 - 🪶 **Zero required dependencies** — pure Lua, stdlib only
 - ✅ **Tested** — 80 plenary-busted specs, CI on stable + nightly Neovim
+
+## 🎯 Focus mode
+
+_The feature this plugin exists for._ A timer in your menu bar is easy to ignore — and it does nothing about the distraction that actually gets you, which is **the editor itself**. Focus mode makes a work block mean something.
+
+<div align="center">
+
+![Focus mode: :Lazy and :Mason blocked mid-work, diagnostics silenced, inactive window dimmed — then allowed again on the break](./assets/focus.gif)
+
+<sub>Timer sped up for the demo. Reproduce it anytime: <code>vhs scripts/demo_focus.tape</code></sub>
+
+</div>
+
+While a **work** phase is running, focus mode can:
+
+- **Block `:` commands you name** — reach for `:Lazy` mid-flow and Neovim politely refuses
+- **Silence diagnostics** — no wall of red baiting you into a cleanup detour (signs stay, virtual text goes)
+- **Dim inactive windows** — attention stays on the buffer you're actually working in
+
+The moment the break starts, everything comes back exactly as it was. It's **opt-in and off by default**:
+
+```lua
+require("pomodoro").setup({
+  focus = {
+    enabled            = true,
+    blocked_commands   = { "Lazy", "Mason", "Telescope" },  -- your rabbit holes
+    silent_diagnostics = true,
+    dim_inactive       = true,
+  },
+})
+```
 
 ## 📦 Requirements
 
