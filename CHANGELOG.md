@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `<Plug>` mappings for every action — `<Plug>(PomodoroStart)`,
+  `(PomodoroPause)`, `(PomodoroResume)`, `(PomodoroStop)`, `(PomodoroSkip)`,
+  `(PomodoroRestart)`, `(PomodoroStatus)`, `(PomodoroStats)`,
+  `(PomodoroHistory)` — available without calling `setup()`
 - `setup()` now validates `status_window`, `statusline`, `notify`,
   `persistence`, and `focus` options with clear error messages instead of
   failing later with raw runtime errors

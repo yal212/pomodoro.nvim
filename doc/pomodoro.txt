@@ -1,4 +1,4 @@
-*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Jul 10
+*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Jul 11
 
 ==============================================================================
 CONTENTS                                                  *pomodoro-contents*
@@ -7,14 +7,15 @@ CONTENTS                                                  *pomodoro-contents*
   2. Setup ........................................ |pomodoro-setup|
   3. Configuration ................................ |pomodoro-config|
   4. Commands ..................................... |pomodoro-commands|
-  5. Lua API ...................................... |pomodoro-api|
-  6. Statusline ................................... |pomodoro-statusline|
-  7. Hooks ........................................ |pomodoro-hooks|
-  8. Focus mode ................................... |pomodoro-focus|
-  9. Persistence .................................. |pomodoro-persistence|
- 10. Telescope .................................... |pomodoro-telescope|
- 11. Highlights ................................... |pomodoro-highlights|
- 12. Health ....................................... |pomodoro-health|
+  5. Mappings ..................................... |pomodoro-mappings|
+  6. Lua API ...................................... |pomodoro-api|
+  7. Statusline ................................... |pomodoro-statusline|
+  8. Hooks ........................................ |pomodoro-hooks|
+  9. Focus mode ................................... |pomodoro-focus|
+ 10. Persistence .................................. |pomodoro-persistence|
+ 11. Telescope .................................... |pomodoro-telescope|
+ 12. Highlights ................................... |pomodoro-highlights|
+ 13. Health ....................................... |pomodoro-health|
 
 ==============================================================================
 1. INTRODUCTION                                       *pomodoro-introduction*
@@ -138,7 +139,38 @@ Defaults: >lua
     Wipe persisted stats (with confirm).
 
 ==============================================================================
-5. LUA API                                                     *pomodoro-api*
+5. MAPPINGS                                               *pomodoro-mappings*
+
+No keys are bound by default. Every action ships a normal-mode <Plug>
+mapping that routes through |:Pomodoro|, so the plugin initializes itself
+with defaults on first use: >lua
+  vim.keymap.set("n", "<leader>ps", "<Plug>(PomodoroStart)",
+    { desc = "Pomodoro: start" })
+<
+With lazy.nvim, listing the mappings under `keys` also lazy-loads the
+plugin on first press.
+
+                                                     *<Plug>(PomodoroStart)*
+<Plug>(PomodoroStart)      Same as |:Pomodoro-start| (no argument).
+                                                     *<Plug>(PomodoroPause)*
+<Plug>(PomodoroPause)      Same as |:Pomodoro-pause|.
+                                                    *<Plug>(PomodoroResume)*
+<Plug>(PomodoroResume)     Same as |:Pomodoro-resume|.
+                                                      *<Plug>(PomodoroStop)*
+<Plug>(PomodoroStop)       Same as |:Pomodoro-stop|.
+                                                      *<Plug>(PomodoroSkip)*
+<Plug>(PomodoroSkip)       Same as |:Pomodoro-skip|.
+                                                   *<Plug>(PomodoroRestart)*
+<Plug>(PomodoroRestart)    Same as |:Pomodoro-restart|.
+                                                    *<Plug>(PomodoroStatus)*
+<Plug>(PomodoroStatus)     Same as |:Pomodoro-status|.
+                                                     *<Plug>(PomodoroStats)*
+<Plug>(PomodoroStats)      Same as |:Pomodoro-stats|.
+                                                   *<Plug>(PomodoroHistory)*
+<Plug>(PomodoroHistory)    Same as |:Pomodoro-history| (default days).
+
+==============================================================================
+6. LUA API                                                     *pomodoro-api*
 
 Everything the subcommands do is available from Lua: >lua
   local pomo = require("pomodoro")
@@ -167,7 +199,7 @@ Lower level: >lua
 <
 
 ==============================================================================
-6. STATUSLINE                                           *pomodoro-statusline*
+7. STATUSLINE                                           *pomodoro-statusline*
 
 Renderer-agnostic component:
 >lua
@@ -196,7 +228,7 @@ Lualine recipe:
 <
 
 ==============================================================================
-7. HOOKS                                                     *pomodoro-hooks*
+8. HOOKS                                                     *pomodoro-hooks*
 
 All hooks receive a small payload table:
 
@@ -218,7 +250,7 @@ Use them to ring a system bell, send a desktop notification, etc:
 <
 
 ==============================================================================
-8. FOCUS MODE                                                *pomodoro-focus*
+9. FOCUS MODE                                                *pomodoro-focus*
 
 Opt-in. When enabled and a work block is active, commands listed in
 `focus.blocked_commands` are intercepted and replaced with a warning notify.
@@ -242,7 +274,7 @@ cursor). Windows opened mid-phase are dimmed too, and the previous
 `PomodoroDimNC` group to tune the effect (see |pomodoro-highlights|).
 
 ==============================================================================
-9. PERSISTENCE                                         *pomodoro-persistence*
+10. PERSISTENCE                                        *pomodoro-persistence*
 
 Stats are stored at `vim.fn.stdpath('data') .. '/pomodoro/stats.json'`. The
 file is rewritten atomically (temp file + rename) on every completed work
@@ -282,7 +314,7 @@ Schema:
 <
 
 ==============================================================================
-10. TELESCOPE                                            *pomodoro-telescope*
+11. TELESCOPE                                            *pomodoro-telescope*
 
 If `nvim-telescope/telescope.nvim` is installed, an extension is registered
 automatically:
@@ -291,7 +323,7 @@ automatically:
 <
 
 ==============================================================================
-11. HIGHLIGHTS                                          *pomodoro-highlights*
+12. HIGHLIGHTS                                          *pomodoro-highlights*
 
 All groups are defined with `default = true` links — override them from your
 colorscheme or config:
@@ -312,7 +344,7 @@ Example: >lua
 <
 
 ==============================================================================
-12. HEALTH                                                  *pomodoro-health*
+13. HEALTH                                                  *pomodoro-health*
 
 >vim
   :checkhealth pomodoro

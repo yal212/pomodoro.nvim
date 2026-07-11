@@ -149,17 +149,31 @@ lua require("pomodoro").setup({})
 
 Subcommands are case-insensitive — `:Pomodoro Start` works too — and `<Tab>` completes them.
 
-Suggested keymaps:
+No keys are bound by default. Every action ships a `<Plug>` mapping — `<Plug>(PomodoroStart)`, `(PomodoroPause)`, `(PomodoroResume)`, `(PomodoroStop)`, `(PomodoroSkip)`, `(PomodoroRestart)`, `(PomodoroStatus)`, `(PomodoroStats)`, `(PomodoroHistory)` — so suggested keymaps look like:
 
 ```lua
 local map = vim.keymap.set
-map("n", "<leader>ps", "<cmd>Pomodoro start<cr>",  { desc = "Pomodoro: start" })
-map("n", "<leader>pp", "<cmd>Pomodoro pause<cr>",  { desc = "Pomodoro: pause" })
-map("n", "<leader>pr", "<cmd>Pomodoro resume<cr>", { desc = "Pomodoro: resume" })
-map("n", "<leader>px", "<cmd>Pomodoro stop<cr>",   { desc = "Pomodoro: stop" })
-map("n", "<leader>pw", "<cmd>Pomodoro status<cr>", { desc = "Pomodoro: window" })
-map("n", "<leader>pS", "<cmd>Pomodoro stats<cr>",  { desc = "Pomodoro: stats" })
+map("n", "<leader>ps", "<Plug>(PomodoroStart)",  { desc = "Pomodoro: start" })
+map("n", "<leader>pp", "<Plug>(PomodoroPause)",  { desc = "Pomodoro: pause" })
+map("n", "<leader>pr", "<Plug>(PomodoroResume)", { desc = "Pomodoro: resume" })
+map("n", "<leader>px", "<Plug>(PomodoroStop)",   { desc = "Pomodoro: stop" })
+map("n", "<leader>pw", "<Plug>(PomodoroStatus)", { desc = "Pomodoro: window" })
+map("n", "<leader>pS", "<Plug>(PomodoroStats)",  { desc = "Pomodoro: stats" })
 ```
+
+With lazy.nvim, putting them in `keys` also lazy-loads the plugin on first press:
+
+```lua
+{
+  "yal212/pomodoro.nvim",
+  keys = {
+    { "<leader>ps", "<Plug>(PomodoroStart)",  desc = "Pomodoro: start" },
+    { "<leader>pw", "<Plug>(PomodoroStatus)", desc = "Pomodoro: window" },
+  },
+}
+```
+
+Plain `<cmd>Pomodoro start<cr>` mappings work just as well if you prefer them.
 
 ## ⚙️ Configuration
 
