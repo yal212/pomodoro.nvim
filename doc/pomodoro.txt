@@ -258,8 +258,9 @@ Only stats are persisted — a running timer does not survive restarting
 Neovim; the next session starts idle. Note also that libuv timers stall
 while the system is suspended, so a phase is effectively extended by
 however long the machine slept. Multiple Neovim instances share the stats
-file safely (writes are atomic), but each keeps its own in-memory copy, so
-the last instance to complete a block wins for that day.
+file safely: writes are atomic, and every save re-reads the file and merges
+this instance's new counts on top, so same-day counts from parallel
+instances add up instead of overwriting each other.
 
 Streak rule: the streak is the number of consecutive days meeting
 `daily_goal` (or completing at least one work block when no goal is set),

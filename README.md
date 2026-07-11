@@ -466,7 +466,7 @@ Timers are driven by libuv, which stalls while the system is suspended, so a pha
 <details>
 <summary><b>Can I run multiple Neovim instances at once?</b></summary>
 
-Yes. They share one stats file, and every save is atomic (temp file + rename), so nothing corrupts — but each instance keeps its own in-memory copy loaded at startup, so the last instance to complete a work block wins; same-day counts from parallel instances aren't merged.
+Yes. They share one stats file, and every save is atomic (temp file + rename), so nothing corrupts. Each save also re-reads the file and merges that instance's new counts on top, so same-day counts from parallel instances add up — completing blocks in two Neovims at once records all of them.
 
 </details>
 
