@@ -5,3 +5,6 @@
 tests/.deps/
 tests/site/
 doc/tags
+
+# Local promo/marketing drafts — not part of the plugin
+promo/

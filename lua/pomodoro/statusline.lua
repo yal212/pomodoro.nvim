@@ -52,8 +52,14 @@ end
 M.format_remaining = format_remaining
 
 local redraw_handle
+local redraw_interval
 
 function M.start_redraw_loop(interval_ms)
+  -- Idempotent: phase transitions call this on every start/resume, and
+  -- tearing down a live timer only to recreate it would drop ticks.
+  if redraw_handle and not redraw_handle:is_closing() and redraw_interval == interval_ms then
+    return
+  end
   M.stop_redraw_loop()
   if not interval_ms or interval_ms <= 0 then
     return
@@ -67,6 +73,7 @@ function M.start_redraw_loop(interval_ms)
     )
     return
   end
+  redraw_interval = interval_ms
   redraw_handle:start(
     interval_ms,
     interval_ms,
@@ -84,6 +91,12 @@ function M.stop_redraw_loop()
     redraw_handle:close()
   end
   redraw_handle = nil
+  redraw_interval = nil
+end
+
+--- @return boolean true while the repeating redraw timer is live
+function M.is_redrawing()
+  return redraw_handle ~= nil and not redraw_handle:is_closing()
 end
 
 return M

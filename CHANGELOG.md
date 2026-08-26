@@ -20,8 +20,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (progress bar and daily-goal math), notifications, and `<Plug>` mappings
   (~40 new specs)
 
+### Changed
+
+- The statusline refresh timer now runs only while a phase is counting down
+  instead of ticking every `refresh_ms` for the lifetime of the session
+- `:checkhealth pomodoro` reports a missing (optional) telescope.nvim as
+  information rather than a warning, so a healthy install checks out clean
+
 ### Fixed
 
+- Focus mode now blocks commands reached through a mapping, not just ones
+  typed at the `:` prompt — `<cmd>Lazy<cr>` behind `<leader>l` was previously
+  waved straight through. Listed commands are swapped for a stub during a work
+  block and restored exactly as they were when it ends; a command that cannot
+  be verifiably restored is left alone
+- Answering the Continue/Stop prompt after starting or stopping a phase no
+  longer clobbers it — a `:Pomodoro start 45` block could be silently replaced
+  by a short break when a stale prompt was answered late
+- `:Pomodoro history` no longer drifts off-screen when the day count exceeds
+  the window height; the panel is clamped to the screen and scrolls
 - Concurrent Neovim instances no longer overwrite each other's stats: saves
   re-read `stats.json` and merge this instance's per-day deltas on top
 

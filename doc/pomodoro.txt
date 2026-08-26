@@ -1,4 +1,4 @@
-*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Jul 11
+*pomodoro.txt*  Pomodoro timer for developers          Last change: 2026 Aug 26
 
 ==============================================================================
 CONTENTS                                                  *pomodoro-contents*
@@ -267,6 +267,18 @@ work.
     blocked_commands = { "Lazy", "Mason", "Telescope" },
     silent_diagnostics = true,
   }
+
+Blocking works on both routes into a command: what you type at the `:` prompt,
+and what a mapping runs for you. For the second, each listed command that
+already exists is swapped for a stub at the start of a work block and put back
+exactly as it was when the block ends — so `<cmd>Lazy<cr>` behind a `<leader>`
+mapping is refused too, not just a typed `:Lazy`.
+
+A command is only swapped when pomodoro.nvim can verify it is able to restore
+it afterwards; anything it cannot (including builtin Ex commands, and Lua
+commands on Neovim versions that do not report their callback) stays covered
+by the `:` prompt route alone. Names with no matching command are left
+untouched.
 
 `silent_diagnostics = true` hides `vim.diagnostic` virtual_text during work
 and restores it on break.

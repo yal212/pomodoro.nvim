@@ -65,7 +65,7 @@ _The feature this plugin exists for._ A timer in your menu bar is easy to ignore
 
 While a **work** phase is running, focus mode can:
 
-- **Block `:` commands you name** — reach for `:Lazy` mid-flow and Neovim politely refuses
+- **Block commands you name** — reach for `:Lazy` mid-flow and Neovim politely refuses, whether you typed it at `:` or hit the `<leader>` mapping you built for it
 - **Silence diagnostics** — no wall of red baiting you into a cleanup detour (signs stay, virtual text goes)
 - **Dim inactive windows** — attention stays on the buffer you're actually working in
 

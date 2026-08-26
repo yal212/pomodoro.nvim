@@ -17,14 +17,30 @@ local function call_hook(name, payload)
   end
 end
 
+-- The statusline only ticks while a phase is counting down, so the repeating
+-- timer is torn down the rest of the time rather than waking the loop forever.
+local function sync_redraw_loop()
+  if State.is_running() then
+    Statusline.start_redraw_loop(Config.get().statusline.refresh_ms)
+  else
+    Statusline.stop_redraw_loop()
+  end
+end
+
 local function prompt_continue(next_phase, on_continue)
   local label = Cycle.label(next_phase)
+  -- vim.ui.select is asynchronous, and the user can start or stop a phase
+  -- while the prompt is up; a stale answer must not touch what is running now.
+  local asked_at = State.generation()
   vim.ui.select({ "Continue → " .. label, "Stop" }, {
     prompt = "Pomodoro: phase complete",
     format_item = function(item)
       return item
     end,
   }, function(choice)
+    if State.generation() ~= asked_at then
+      return
+    end
     if choice and choice ~= "Stop" then
       on_continue()
     else
@@ -63,6 +79,7 @@ local function start_phase(phase, override_min)
     Notify.send(string.format("Long break — %d min", minutes))
     call_hook("on_break_start", { kind = "long", duration_min = minutes })
   end
+  sync_redraw_loop()
 end
 
 -- ctx.skipped: the phase was cut short via :Pomodoro skip — advance to the
@@ -94,6 +111,7 @@ function M._on_phase_end(phase, ctx)
       start_phase(next_phase)
     else
       State.set_phase(State.PHASE.IDLE, 0)
+      sync_redraw_loop()
       Notify.send("Work complete")
       prompt_continue(next_phase, function()
         start_phase(next_phase)
@@ -111,6 +129,7 @@ function M._on_phase_end(phase, ctx)
       start_phase(State.PHASE.WORK)
     else
       State.set_phase(State.PHASE.IDLE, 0)
+      sync_redraw_loop()
       Notify.send("Break over")
       prompt_continue(State.PHASE.WORK, function()
         start_phase(State.PHASE.WORK)
@@ -171,6 +190,7 @@ end
 function M.pause()
   if State.pause() then
     Timer.stop()
+    sync_redraw_loop()
     Notify.send("Paused")
   end
 end
@@ -189,6 +209,7 @@ function M.resume()
     State.pause() -- roll back to the paused state
     return
   end
+  sync_redraw_loop()
   Notify.send("Resumed")
 end
 
@@ -197,6 +218,7 @@ function M.stop()
   Timer.stop()
   Focus.on_work_end()
   State.set_phase(State.PHASE.IDLE, 0)
+  sync_redraw_loop()
   Notify.send("Stopped")
 end
 
@@ -292,6 +314,7 @@ local function register_persist_autocmd()
     group = group,
     callback = function()
       Stats.save()
+      Statusline.stop_redraw_loop()
     end,
   })
 end
@@ -307,7 +330,7 @@ function M.setup(user_opts)
   Focus.setup()
   require("pomodoro.commands").register()
   register_persist_autocmd()
-  Statusline.start_redraw_loop(Config.get().statusline.refresh_ms)
+  sync_redraw_loop()
   did_setup = true
 end
 
