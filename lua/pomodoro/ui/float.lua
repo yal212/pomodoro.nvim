@@ -1,7 +1,6 @@
 local M = {}
 
 local function open_centered(lines, opts)
-  local height = #lines
   local width = 0
   for _, l in ipairs(lines) do
     -- display cells, not bytes: history bars are multibyte
@@ -11,7 +10,14 @@ local function open_centered(lines, opts)
     end
   end
   width = math.max(width, 20)
-  width = math.min(width, vim.o.columns - 4)
+  width = math.max(math.min(width, vim.o.columns - 4), 1)
+
+  -- Clamp to what the screen can actually show: the window costs two rows of
+  -- border on top of its height, and 'statusline' plus the cmdline take two
+  -- more. Without this a long panel (:Pomodoro history 60) lands at a negative
+  -- row with its header scrolled off the top of the screen. The buffer still
+  -- holds every line, so a focusable panel just scrolls.
+  local height = math.max(math.min(#lines, vim.o.lines - 4), 1)
 
   local ok_buf, buf = pcall(vim.api.nvim_create_buf, false, true)
   if not ok_buf or not buf then
@@ -26,8 +32,8 @@ local function open_centered(lines, opts)
     relative = "editor",
     width = width + 2,
     height = height,
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width - 2) / 2),
+    row = math.max(math.floor((vim.o.lines - height) / 2), 0),
+    col = math.max(math.floor((vim.o.columns - width - 2) / 2), 0),
     style = "minimal",
     border = opts.border or "rounded",
     focusable = opts.focusable or false,

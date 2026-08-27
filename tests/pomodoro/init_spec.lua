@@ -183,4 +183,82 @@ describe("init state machine", function()
       end
     end
   end)
+
+  describe("continue prompt", function()
+    local saved_select
+
+    -- vim.ui.select is asynchronous in every real UI (dressing, telescope,
+    -- noice), so stash the callback and answer it later on purpose.
+    local function capture_prompt()
+      local pending
+      vim.ui.select = function(items, _, on_choice)
+        pending = function(index)
+          on_choice(items[index])
+        end
+      end
+      return function(index)
+        assert.truthy(pending)
+        pending(index)
+      end
+    end
+
+    before_each(function()
+      saved_select = vim.ui.select
+    end)
+
+    after_each(function()
+      vim.ui.select = saved_select
+    end)
+
+    it("starts the next phase when nothing intervened", function()
+      setup({ auto_start_break = false })
+      local answer = capture_prompt()
+      pomo.start("work")
+      pomo.skip()
+      assert.equals(State.PHASE.IDLE, State.current.phase)
+      answer(1)
+      assert.equals(State.PHASE.SHORT_BREAK, State.current.phase)
+    end)
+
+    it("an answer arriving after a new phase started leaves it alone", function()
+      setup({ auto_start_break = false })
+      local answer = capture_prompt()
+      pomo.start("work")
+      pomo.skip() -- work ends; the Continue/Stop prompt is now open
+      pomo.start(45) -- the user starts a one-off block instead of answering
+      answer(1) -- ...and only then picks "Continue → Short Break"
+      assert.equals(State.PHASE.WORK, State.current.phase)
+      assert.equals(45 * 60 * 1000, State.current.duration_ms)
+    end)
+
+    it("an answer arriving after stop does not restart the timer", function()
+      setup({ auto_start_break = false })
+      local answer = capture_prompt()
+      pomo.start("work")
+      pomo.skip()
+      pomo.stop()
+      answer(1)
+      assert.equals(State.PHASE.IDLE, State.current.phase)
+    end)
+  end)
+
+  describe("statusline redraw loop", function()
+    after_each(function()
+      require("pomodoro.statusline").stop_redraw_loop()
+    end)
+
+    it("ticks only while a phase is counting down", function()
+      setup()
+      local Statusline = require("pomodoro.statusline")
+      assert.is_false(Statusline.is_redrawing())
+      pomo.start("work")
+      assert.is_true(Statusline.is_redrawing())
+      pomo.pause()
+      assert.is_false(Statusline.is_redrawing())
+      pomo.resume()
+      assert.is_true(Statusline.is_redrawing())
+      pomo.stop()
+      assert.is_false(Statusline.is_redrawing())
+    end)
+  end)
 end)

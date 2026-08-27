@@ -22,8 +22,18 @@ end
 
 M.current = fresh()
 
+-- Bumped by every transition that changes what the timer is doing. Async
+-- callbacks (the Continue/Stop prompt) capture it and bail when it moves on,
+-- so a stale answer can never act on a phase that already ended.
+local generation = 0
+
+function M.generation()
+  return generation
+end
+
 function M.reset()
   M.current = fresh()
+  generation = generation + 1
 end
 
 function M.is_active()
@@ -59,6 +69,7 @@ end
 
 function M.set_phase(phase, duration_ms, now_ms)
   now_ms = now_ms or vim.uv.now()
+  generation = generation + 1
   M.current.phase = phase
   if phase == M.PHASE.IDLE or phase == M.PHASE.PAUSED then
     M.current.started_at = nil
@@ -80,6 +91,7 @@ function M.pause(now_ms)
     return false
   end
   now_ms = now_ms or vim.uv.now()
+  generation = generation + 1
   local remaining = M.remaining_ms(now_ms)
   M.current.paused_from = M.current.phase
   M.current.phase = M.PHASE.PAUSED
@@ -99,6 +111,7 @@ function M.resume(now_ms)
   if remaining <= 0 then
     return false, nil, nil
   end
+  generation = generation + 1
   M.current.phase = prev
   M.current.started_at = now_ms
   M.current.ends_at = now_ms + remaining

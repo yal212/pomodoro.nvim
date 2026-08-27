@@ -12,6 +12,9 @@ end
 local function error_(...)
   return (vim.health.error or vim.health.report_error)(...)
 end
+local function info(...)
+  return (vim.health.info or vim.health.report_info or vim.health.ok)(...)
+end
 
 function M.check()
   start("pomodoro.nvim")
@@ -65,7 +68,9 @@ function M.check()
   if pcall(require, "telescope") then
     ok("telescope.nvim found (optional picker available)")
   else
-    warn("telescope.nvim not installed (optional)")
+    -- Optional: its absence is not a problem to fix, so don't raise a warning
+    -- that would keep a healthy install from ever reporting clean.
+    info("telescope.nvim not installed — the optional stats picker is unavailable")
   end
 
   if pcall(require, "notify") then

@@ -11,6 +11,24 @@ describe("ui.float", function()
     vim.api.nvim_win_close(win, true)
     assert.truthy(buf)
   end)
+
+  it("clamps a panel taller than the screen instead of drifting off it", function()
+    local saved_lines = vim.o.lines
+    vim.o.lines = 24
+    local lines = {}
+    for i = 1, 60 do
+      lines[i] = "row " .. i
+    end
+    local buf, win = Float.open_panel(lines)
+    assert.truthy(win)
+    local cfg = vim.api.nvim_win_get_config(win)
+    assert.is_true(cfg.row >= 0)
+    assert.is_true(cfg.height <= vim.o.lines - 4)
+    -- every line is still in the buffer; the panel scrolls rather than truncates
+    assert.equals(60, vim.api.nvim_buf_line_count(buf))
+    vim.api.nvim_win_close(win, true)
+    vim.o.lines = saved_lines
+  end)
 end)
 
 describe("ui.status", function()

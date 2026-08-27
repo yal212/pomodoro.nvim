@@ -96,4 +96,75 @@ describe("focus", function()
       assert.is_false(dimmed(vim.api.nvim_get_current_win()))
     end)
   end)
+
+  -- CmdlineLeave only sees what the user types at ':'. Mappings built with
+  -- <cmd>…<cr> never open a cmdline, which is how most configs reach a plugin.
+  describe("blocking commands that bypass the cmdline", function()
+    local NAME = "PomodoroSpecCmd"
+    local ran
+
+    local function define(opts)
+      ran = 0
+      vim.api.nvim_create_user_command(NAME, function()
+        ran = ran + 1
+      end, opts or {})
+    end
+
+    local function command_def(name)
+      return vim.api.nvim_get_commands({ builtin = false })[name]
+    end
+
+    after_each(function()
+      Focus.on_work_end()
+      pcall(vim.api.nvim_del_user_command, NAME)
+      pcall(vim.keymap.del, "n", "g<F5>")
+    end)
+
+    it("refuses a command invoked through a <cmd> mapping during work", function()
+      define()
+      Config.merge({ focus = { enabled = true, blocked_commands = { NAME } } })
+      Focus.on_work_start()
+      vim.keymap.set("n", "g<F5>", "<cmd>" .. NAME .. "<cr>")
+      vim.api.nvim_feedkeys("g<F5>", "x", false)
+      assert.equals(0, ran)
+      assert.same({ NAME }, Focus._shimmed_commands())
+    end)
+
+    it("hands the command back when the work block ends", function()
+      define()
+      Config.merge({ focus = { enabled = true, blocked_commands = { NAME } } })
+      Focus.on_work_start()
+      Focus.on_work_end()
+      assert.same({}, Focus._shimmed_commands())
+      vim.cmd(NAME)
+      assert.equals(1, ran)
+    end)
+
+    it("restores the command's original attributes", function()
+      define({ nargs = "*", bang = true, range = true, desc = "the real thing" })
+      local before = command_def(NAME)
+      Config.merge({ focus = { enabled = true, blocked_commands = { NAME } } })
+      Focus.on_work_start()
+      Focus.on_work_end()
+      local after = command_def(NAME)
+      for _, field in ipairs({ "nargs", "bang", "range", "definition" }) do
+        assert.equals(before[field], after[field])
+      end
+    end)
+
+    it("leaves a name alone when no such command exists", function()
+      Config.merge({ focus = { enabled = true, blocked_commands = { "PomodoroNoSuchCmd" } } })
+      Focus.on_work_start()
+      assert.same({}, Focus._shimmed_commands())
+      assert.is_nil(command_def("PomodoroNoSuchCmd"))
+    end)
+
+    it("does not touch commands while focus mode is off", function()
+      define()
+      Config.merge({ focus = { enabled = false, blocked_commands = { NAME } } })
+      Focus.on_work_start()
+      vim.cmd(NAME)
+      assert.equals(1, ran)
+    end)
+  end)
 end)
