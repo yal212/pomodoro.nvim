@@ -5,3 +5,6 @@
 tests/.deps/
 tests/site/
 doc/tags
+
+# Local Claude Code settings
+.claude/settings.local.json
