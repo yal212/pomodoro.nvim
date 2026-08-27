@@ -8,3 +8,6 @@ doc/tags
 
 # Local promo/marketing drafts — not part of the plugin
 promo/
+
+# Local Claude Code settings
+.claude/settings.local.json
