@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 # pomodoro.nvim
@@ -99,7 +101,7 @@ require("pomodoro").setup({
   cmd = "Pomodoro",
   ---@type pomodoro.Config
   opts = {
-    -- your config; see :help pomodoro-config
+    -- your config; see :help pomodoro
   },
 }
 ```
